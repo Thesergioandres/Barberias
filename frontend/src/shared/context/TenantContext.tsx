@@ -1,11 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { apiRequest } from '../infrastructure/http/apiClient';
 import { useAuth } from './AuthContext';
+import { resolveHostContext } from '../utils/host';
 
 export type TenantRecord = {
   id: string;
   name: string;
   slug: string;
+  planId?: string;
+  planName?: string;
   subdomain?: string;
   customColors?: {
     primary?: string;
@@ -31,36 +34,21 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
 
   const applyBranding = useCallback((nextTenant: TenantRecord | null) => {
     const root = document.documentElement;
-    const primary = nextTenant?.customColors?.primary || '#f59e0b';
-    const secondary = nextTenant?.customColors?.secondary || '#fde68a';
+    const primary = nextTenant?.customColors?.primary || '#f4b41a';
+    const secondary = nextTenant?.customColors?.secondary || '#f9d784';
+    const logoUrl = nextTenant?.logoUrl ? `url("${nextTenant.logoUrl}")` : 'none';
 
-    const toRgb = (hex: string) => {
-      const normalized = hex.replace('#', '').trim();
-      if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
-        return null;
-      }
-      const r = parseInt(normalized.slice(0, 2), 16);
-      const g = parseInt(normalized.slice(2, 4), 16);
-      const b = parseInt(normalized.slice(4, 6), 16);
-      return `${r} ${g} ${b}`;
-    };
-
-    const primaryRgb = toRgb(primary);
-    const secondaryRgb = toRgb(secondary);
-    if (primaryRgb) {
-      root.style.setProperty('--tenant-primary', primaryRgb);
-      root.style.setProperty('--accent', primaryRgb);
-    }
-    if (secondaryRgb) {
-      root.style.setProperty('--tenant-secondary', secondaryRgb);
-    }
+    root.style.setProperty('--primary', primary);
+    root.style.setProperty('--secondary', secondary);
+    root.style.setProperty('--logo-url', logoUrl);
+    document.title = nextTenant?.name ? `${nextTenant.name} - ESSENCE FACTORY SAAS` : 'ESSENCE FACTORY SAAS';
   }, []);
 
   // Auto-resolve tenant for ADMIN or BARBER roles based on their tied tenantId
   useEffect(() => {
     if (user && (user.role === 'ADMIN' || user.role === 'BARBER') && user.tenantId && !tenant) {
       setLoading(true);
-      apiRequest<{ id: string; name: string; slug: string }>(`/tenants/${user.tenantId}`)
+      apiRequest<TenantRecord>(`/tenants/${user.tenantId}`)
         .then((data) => {
           setTenantState(data);
           applyBranding(data);
@@ -78,7 +66,8 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const loadTenantBySlug = useCallback(async (slug: string) => {
     try {
       setLoading(true);
-      const data = await apiRequest<TenantRecord>(`/tenants/slug/${slug}`);
+      const preview = await apiRequest<TenantRecord>(`/tenants/slug/${slug}`);
+      const data = preview?.id ? await apiRequest<TenantRecord>(`/tenants/${preview.id}`) : preview;
       setTenantState(data);
       applyBranding(data);
     } catch (_err) {
@@ -89,16 +78,17 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   }, [applyBranding]);
 
   useEffect(() => {
-    const host = window.location.hostname;
-    const segments = host.split('.');
-    const hasSubdomain = segments.length > 1 && host !== 'localhost';
-    const localSubdomain = host.endsWith('localhost') && segments.length > 1;
-    const slug = hasSubdomain || localSubdomain ? segments[0] : null;
+    const { mode, slug } = resolveHostContext(window.location.hostname);
 
-    if (slug && !tenant) {
+    if (mode === 'tenant' && slug && !tenant) {
       loadTenantBySlug(slug);
+      return;
     }
-  }, [tenant, loadTenantBySlug]);
+
+    if (mode !== 'tenant') {
+      applyBranding(null);
+    }
+  }, [tenant, loadTenantBySlug, applyBranding]);
 
   const value = useMemo(() => ({ tenant, loading, setTenant, loadTenantBySlug }), [tenant, loading, setTenant, loadTenantBySlug]);
 

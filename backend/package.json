@@ -7,6 +7,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "reset:god": "ts-node-dev --transpile-only src/bootstrap/resetMongoOnce.ts",
     "test": "node --test"
   },
   "dependencies": {

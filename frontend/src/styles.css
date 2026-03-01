@@ -1,22 +1,35 @@
 @import "tailwindcss";
 
+@theme {
+	--color-primary: var(--primary);
+	--color-secondary: var(--secondary);
+	--color-surface: var(--surface);
+	--color-panel: var(--panel);
+	--color-ink: var(--ink);
+	--color-muted: var(--muted);
+	--color-outline: var(--outline);
+}
+
 @layer base {
 	:root {
 		color-scheme: dark;
-		--accent: 245 158 11;
-		--tenant-primary: 245 158 11;
-		--tenant-secondary: 253 230 138;
-		--surface: 15 15 18;
-		--panel: 24 24 28;
+		--primary: #f4b41a;
+		--secondary: #f9d784;
+		--surface: #0b0c10;
+		--panel: #15171e;
+		--ink: #f8fafc;
+		--muted: #c3cad6;
+		--outline: rgba(248, 250, 252, 0.12);
+		--logo-url: none;
 	}
 
 	body {
 		font-family: "Space Grotesk", "Sora", "Arial", sans-serif;
 		background:
-			radial-gradient(1200px 480px at 15% -10%, rgba(245, 158, 11, 0.22), transparent 55%),
-			radial-gradient(900px 380px at 95% 0%, rgba(94, 234, 212, 0.16), transparent 60%),
-			linear-gradient(180deg, rgba(10, 10, 12, 1) 0%, rgba(12, 12, 16, 1) 45%, rgba(8, 8, 12, 1) 100%);
-		color: #f8fafc;
+			radial-gradient(1200px 520px at 12% -10%, color-mix(in oklab, var(--primary), transparent 76%), transparent 60%),
+			radial-gradient(900px 420px at 92% 0%, color-mix(in oklab, var(--secondary), transparent 82%), transparent 60%),
+			linear-gradient(180deg, var(--surface) 0%, color-mix(in oklab, var(--surface), #0f1118 55%) 60%, #050608 100%);
+		color: var(--ink);
 		min-height: 100vh;
 	}
 
@@ -39,7 +52,7 @@
 
 @layer components {
 	.app-shell {
-		@apply min-h-screen;
+		@apply min-h-screen text-ink;
 	}
 
 	.app-container {
@@ -47,67 +60,141 @@
 	}
 
 	.app-card {
-		@apply rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/30 backdrop-blur;
+		@apply rounded-2xl border p-6 shadow-xl backdrop-blur;
+		border-color: var(--outline);
+		background-color: color-mix(in oklab, var(--panel), transparent 18%);
+		box-shadow: 0 24px 60px rgba(2, 4, 10, 0.45);
 	}
 
 	.app-card-soft {
-		@apply rounded-2xl border border-white/10 bg-black/40 p-6;
+		@apply rounded-2xl border p-6;
+		border-color: var(--outline);
+		background-color: color-mix(in oklab, var(--panel), transparent 12%);
 	}
 
 	.app-chip {
-		@apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.2em] text-zinc-200;
-		color: rgb(var(--tenant-secondary));
+		@apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em];
+		border-color: color-mix(in oklab, var(--secondary), transparent 60%);
+		color: var(--secondary);
+		background-color: color-mix(in oklab, var(--secondary), transparent 90%);
 	}
 
 	.app-navlink {
-		@apply rounded-full border border-white/10 bg-black/40 px-4 py-2 text-sm text-zinc-100 transition hover:border-white/20 hover:bg-white/10;
+		@apply rounded-full border px-4 py-2 text-sm transition;
+		border-color: var(--outline);
+		color: var(--ink);
+		background-color: color-mix(in oklab, var(--panel), transparent 20%);
+	}
+
+	.app-navlink:hover {
+		border-color: color-mix(in oklab, var(--secondary), transparent 60%);
+		background-color: color-mix(in oklab, var(--panel), transparent 5%);
+	}
+
+	.app-header {
+		border-color: var(--outline);
+		background-color: color-mix(in oklab, var(--panel), transparent 30%);
 	}
 
 	.btn-primary {
 		@apply inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-black transition;
-		background-color: rgb(var(--tenant-primary));
+		background-color: var(--primary);
 	}
 
 	.btn-primary:hover {
-		background-color: rgb(var(--tenant-secondary));
+		background-color: var(--secondary);
 	}
 
 	.btn-secondary {
 		@apply inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm font-semibold transition;
-		border-color: rgba(var(--tenant-primary), 0.3);
-		color: rgb(var(--tenant-secondary));
-		background-color: rgba(var(--tenant-primary), 0.1);
+		border-color: color-mix(in oklab, var(--primary), transparent 60%);
+		color: var(--secondary);
+		background-color: color-mix(in oklab, var(--primary), transparent 84%);
 	}
 
 	.btn-secondary:hover {
-		background-color: rgba(var(--tenant-primary), 0.2);
+		background-color: color-mix(in oklab, var(--primary), transparent 72%);
 	}
 
 	.btn-ghost {
-		@apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-zinc-200 transition hover:bg-white/10;
+		@apply inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs transition;
+		border-color: var(--outline);
+		color: var(--muted);
+		background-color: color-mix(in oklab, var(--panel), transparent 10%);
+	}
+
+	.btn-ghost:hover {
+		color: var(--ink);
+		background-color: color-mix(in oklab, var(--panel), transparent 2%);
 	}
 
 	.input-field {
-		@apply w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2 text-sm text-white placeholder:text-zinc-400 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-300/30;
+		@apply w-full rounded-xl border px-4 py-2 text-sm placeholder:text-muted focus:outline-none;
+		border-color: var(--outline);
+		color: var(--ink);
+		background-color: color-mix(in oklab, var(--panel), transparent 14%);
+	}
+
+	.input-field:focus {
+		border-color: color-mix(in oklab, var(--secondary), transparent 45%);
+		box-shadow: 0 0 0 2px color-mix(in oklab, var(--secondary), transparent 70%);
 	}
 
 	.select-field {
-		@apply w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2 text-sm text-white focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-300/30;
+		@apply w-full rounded-xl border px-4 py-2 text-sm focus:outline-none;
+		border-color: var(--outline);
+		color: var(--ink);
+		background-color: color-mix(in oklab, var(--panel), transparent 14%);
+	}
+
+	.select-field:focus {
+		border-color: color-mix(in oklab, var(--secondary), transparent 45%);
+		box-shadow: 0 0 0 2px color-mix(in oklab, var(--secondary), transparent 70%);
 	}
 
 	.textarea-field {
-		@apply w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2 text-sm text-white placeholder:text-zinc-400 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-300/30;
+		@apply w-full rounded-xl border px-4 py-2 text-sm placeholder:text-muted focus:outline-none;
+		border-color: var(--outline);
+		color: var(--ink);
+		background-color: color-mix(in oklab, var(--panel), transparent 14%);
+	}
+
+	.textarea-field:focus {
+		border-color: color-mix(in oklab, var(--secondary), transparent 45%);
+		box-shadow: 0 0 0 2px color-mix(in oklab, var(--secondary), transparent 70%);
 	}
 
 	.status-pill {
-		@apply rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-200;
+		@apply rounded-full border px-3 py-1 text-xs font-semibold;
+		border-color: var(--outline);
+		color: var(--muted);
+		background-color: color-mix(in oklab, var(--panel), transparent 12%);
 	}
 
 	.section-title {
-		@apply text-2xl font-semibold text-white;
+		@apply text-2xl font-semibold;
+		color: var(--ink);
 	}
 
 	.section-subtitle {
-		@apply text-sm text-zinc-300;
+		@apply text-sm;
+		color: var(--muted);
+	}
+
+	.skeleton {
+		background-color: color-mix(in oklab, var(--panel), transparent 35%);
+	}
+
+	.overlay-surface {
+		background-color: color-mix(in oklab, var(--surface), transparent 20%);
+	}
+
+	.brand-logo {
+		@apply h-10 w-10 rounded-2xl;
+		background-color: color-mix(in oklab, var(--panel), transparent 15%);
+		background-image: var(--logo-url);
+		background-size: cover;
+		background-position: center;
+		border: 1px solid var(--outline);
 	}
 }

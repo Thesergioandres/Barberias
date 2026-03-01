@@ -15,7 +15,7 @@ export function WaitingApprovalPage() {
         <p>Estado: pendiente</p>
       </div>
 
-      <p className="text-sm text-zinc-400">
+      <p className="text-sm text-muted">
         Te notificaremos cuando tu cuenta sea aprobada. Cuando eso ocurra, cierra sesion e ingresa de nuevo.
       </p>
     </section>

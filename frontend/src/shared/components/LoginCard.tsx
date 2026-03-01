@@ -29,10 +29,10 @@ export function LoginCard({ title = 'Iniciar sesion', subtitle, demoHint }: Logi
   return (
     <div className="app-card max-w-xl space-y-4">
       <div>
-        <p className="text-sm font-semibold text-zinc-200">{title}</p>
-        {subtitle ? <p className="text-xs text-zinc-400">{subtitle}</p> : null}
+        <p className="text-sm font-semibold text-ink">{title}</p>
+        {subtitle ? <p className="text-xs text-muted">{subtitle}</p> : null}
       </div>
-      <label className="text-xs text-zinc-400">
+      <label className="text-xs text-muted">
         Correo
         <input
           className="input-field mt-2"
@@ -41,7 +41,7 @@ export function LoginCard({ title = 'Iniciar sesion', subtitle, demoHint }: Logi
           placeholder="correo@barberia.com"
         />
       </label>
-      <label className="text-xs text-zinc-400">
+      <label className="text-xs text-muted">
         Contrasena
         <input
           type="password"
@@ -54,8 +54,8 @@ export function LoginCard({ title = 'Iniciar sesion', subtitle, demoHint }: Logi
       <button type="button" className="btn-primary" onClick={handleLogin} disabled={loading}>
         {loading ? 'Ingresando...' : 'Iniciar sesion'}
       </button>
-      {error ? <p className="text-sm text-red-300">{error}</p> : null}
-      {demoHint ? <p className="text-xs text-zinc-400">{demoHint}</p> : null}
+      {error ? <p className="text-sm text-secondary">{error}</p> : null}
+      {demoHint ? <p className="text-xs text-muted">{demoHint}</p> : null}
     </div>
   );
 }
