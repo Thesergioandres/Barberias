@@ -1,0 +1,17 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Railway Backend Deploy Hook
+        if: ${{ secrets.RAILWAY_BACKEND_DEPLOY_HOOK != '' }}
+        run: curl -fsSL -X POST "${{ secrets.RAILWAY_BACKEND_DEPLOY_HOOK }}"
+
+      - name: Trigger Railway Frontend Deploy Hook
+        if: ${{ secrets.RAILWAY_FRONTEND_DEPLOY_HOOK != '' }}
+        run: curl -fsSL -X POST "${{ secrets.RAILWAY_FRONTEND_DEPLOY_HOOK }}"

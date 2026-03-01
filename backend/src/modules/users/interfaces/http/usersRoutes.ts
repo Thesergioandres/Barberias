@@ -1,0 +1,179 @@
+import { Router, type Request, type Response } from 'express';
+import bcrypt from 'bcryptjs';
+import type { RegisterClientUseCase } from '../../application/use-cases/registerClientUseCase';
+import type { CreateUserByAdminUseCase } from '../../application/use-cases/createUserByAdminUseCase';
+import type { UsersRepository } from '../../application/ports/UsersRepository';
+import type { authenticateJwt } from '../../../../shared/interfaces/http/middlewares/authenticateJwt';
+import type { requireRoles } from '../../../../shared/interfaces/http/middlewares/requireRoles';
+
+function sanitizeUser(user: { passwordHash?: string }) {
+  const { passwordHash, ...safeUser } = user;
+  return safeUser;
+}
+
+function isE164(phone: string) {
+  return /^\+[1-9]\d{7,14}$/.test(phone);
+}
+
+export function createUsersRoutes({
+  registerClientUseCase,
+  createUserByAdminUseCase,
+  usersRepository,
+  authenticateJwt: authMiddleware,
+  requireRoles: requireRolesMiddleware
+}: {
+  registerClientUseCase: RegisterClientUseCase;
+  createUserByAdminUseCase: CreateUserByAdminUseCase;
+  usersRepository: UsersRepository;
+  authenticateJwt: ReturnType<typeof authenticateJwt>;
+  requireRoles: typeof requireRoles;
+}) {
+  const router = Router();
+
+  router.get('/public/barbers', async (_req: Request, res: Response) => {
+    const barbers = await usersRepository.list('BARBER');
+    const safeBarbers = barbers
+      .filter((barber) => barber.active !== false && barber.approved !== false)
+      .map((barber) => ({
+        id: barber.id,
+        name: barber.name,
+        role: barber.role
+      }));
+
+    res.json(safeBarbers);
+  });
+
+  router.get('/', authMiddleware, requireRolesMiddleware('ADMIN'), async (req: Request, res: Response) => {
+    const tenantId = req.auth?.tenantId;
+    if (!tenantId) return res.status(403).json({ message: 'No tenantId' });
+
+    const role = typeof req.query.role === 'string' ? req.query.role : undefined;
+    const users = await usersRepository.list(tenantId, role);
+    res.json(users.map(sanitizeUser));
+  });
+
+  router.get('/pending', authMiddleware, requireRolesMiddleware('GOD'), async (req: Request, res: Response) => {
+    const tenantId = req.auth?.tenantId;
+    if (!tenantId) return res.status(403).json({ message: 'No tenantId' });
+
+    const users = await usersRepository.list(tenantId);
+    const pending = users.filter((user) => user.approved === false);
+    res.json(pending.map(sanitizeUser));
+  });
+
+  router.post('/register', async (req: Request, res: Response) => {
+    const result = await registerClientUseCase.execute((req.body || {}) as Record<string, unknown>);
+    if ('error' in result) {
+      return res.status(result.statusCode).json({ message: result.error });
+    }
+
+    return res.status(201).json(sanitizeUser(result.user));
+  });
+
+  router.post('/admin', authMiddleware, requireRolesMiddleware('ADMIN'), async (req: Request, res: Response) => {
+    const result = await createUserByAdminUseCase.execute((req.body || {}) as Record<string, unknown>);
+    if ('error' in result) {
+      return res.status(result.statusCode).json({ message: result.error });
+    }
+
+    return res.status(201).json(sanitizeUser(result.user));
+  });
+
+  router.patch('/:id/whatsapp-consent', authMiddleware, async (req: Request, res: Response) => {
+    const requesterId = req.auth?.sub;
+    const requesterRole = req.auth?.role;
+    const isAdmin = requesterRole === 'ADMIN';
+
+    if (!isAdmin && requesterId !== req.params.id) {
+      return res.status(403).json({ message: 'Solo puedes actualizar tu propio consentimiento' });
+    }
+
+    const user = await usersRepository.updateWhatsappConsent(req.params.id, Boolean(req.body?.whatsappConsent));
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    return res.json(sanitizeUser(user));
+  });
+
+  router.patch('/me', authMiddleware, async (req: Request, res: Response) => {
+    const userId = req.auth?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: 'No autenticado' });
+    }
+
+    const payload = (req.body || {}) as {
+      name?: string;
+      phone?: string;
+      whatsappConsent?: boolean;
+    };
+
+    if (payload.phone && !isE164(payload.phone)) {
+      return res.status(400).json({ message: 'phone debe estar en formato E.164' });
+    }
+
+    const updated = await usersRepository.update(userId, {
+      name: payload.name,
+      phone: payload.phone,
+      whatsappConsent: payload.whatsappConsent
+    });
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    return res.json(sanitizeUser(updated));
+  });
+
+  router.patch('/:id', authMiddleware, requireRolesMiddleware('ADMIN'), async (req: Request, res: Response) => {
+    const payload = (req.body || {}) as {
+      name?: string;
+      email?: string;
+      phone?: string;
+      role?: string;
+      active?: boolean;
+      whatsappConsent?: boolean;
+      password?: string;
+    };
+
+    if (payload.phone && !isE164(payload.phone)) {
+      return res.status(400).json({ message: 'phone debe estar en formato E.164' });
+    }
+
+    if (payload.role && !['GOD', 'ADMIN', 'BARBER', 'CLIENT'].includes(payload.role)) {
+      return res.status(400).json({ message: 'role inválido' });
+    }
+
+    if (payload.role === 'GOD' && req.auth?.role !== 'GOD') {
+      return res.status(403).json({ message: 'Solo GOD puede asignar rol GOD' });
+    }
+
+    const passwordHash = payload.password ? bcrypt.hashSync(payload.password, 10) : undefined;
+    const updated = await usersRepository.update(req.params.id, {
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+      role: payload.role as 'GOD' | 'ADMIN' | 'BARBER' | 'CLIENT' | undefined,
+      active: payload.active,
+      whatsappConsent: payload.whatsappConsent,
+      passwordHash
+    });
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    return res.json(sanitizeUser(updated));
+  });
+
+  router.patch('/:id/approve', authMiddleware, requireRolesMiddleware('GOD'), async (req: Request, res: Response) => {
+    const updated = await usersRepository.update(req.params.id, { approved: true });
+    if (!updated) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    return res.json(sanitizeUser(updated));
+  });
+
+  return router;
+}
