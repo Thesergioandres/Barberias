@@ -189,6 +189,22 @@
 		background-color: color-mix(in oklab, var(--surface), transparent 20%);
 	}
 
+	.rdp {
+		--rdp-accent-color: var(--primary);
+		--rdp-background-color: color-mix(in oklab, var(--panel), transparent 25%);
+		--rdp-outline: 2px solid color-mix(in oklab, var(--secondary), transparent 60%);
+		color: var(--ink);
+	}
+
+	.rdp button {
+		color: var(--ink);
+	}
+
+	.rdp-day_selected,
+	.rdp-day_selected:hover {
+		color: #0b0c10;
+	}
+
 	.brand-logo {
 		@apply h-10 w-10 rounded-2xl;
 		background-color: color-mix(in oklab, var(--panel), transparent 15%);

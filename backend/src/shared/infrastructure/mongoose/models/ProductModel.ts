@@ -8,6 +8,18 @@ type ProductDocument = {
   price: number;
   stock: number;
   active: boolean;
+  lastCost?: number;
+  averageCost?: number;
+  totalPurchaseUnits?: number;
+  totalPurchaseCost?: number;
+  lastRestockedAt?: Date | null;
+  restocks?: Array<{
+    date: Date;
+    supplier?: string;
+    quantity: number;
+    unitCost: number;
+    totalCost: number;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -20,7 +32,24 @@ const productSchema = new mongoose.Schema<ProductDocument>(
     description: { type: String, default: '' },
     price: { type: Number, required: true },
     stock: { type: Number, required: true },
-    active: { type: Boolean, default: true }
+    active: { type: Boolean, default: true },
+    lastCost: { type: Number, default: 0 },
+    averageCost: { type: Number, default: 0 },
+    totalPurchaseUnits: { type: Number, default: 0 },
+    totalPurchaseCost: { type: Number, default: 0 },
+    lastRestockedAt: { type: Date, default: null },
+    restocks: {
+      type: [
+        {
+          date: { type: Date, required: true },
+          supplier: { type: String, default: '' },
+          quantity: { type: Number, required: true },
+          unitCost: { type: Number, required: true },
+          totalCost: { type: Number, required: true }
+        }
+      ],
+      default: []
+    }
   },
   { timestamps: true }
 );

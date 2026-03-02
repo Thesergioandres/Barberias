@@ -122,9 +122,94 @@ export function createReportsModule({
     };
   };
 
+  const getRange = async (tenantId: string, startDate: string, endDate: string) => {
+    const [users, services, appointments] = await Promise.all([
+      usersRepository.list(tenantId),
+      servicesRepository.list(tenantId),
+      appointmentsRepository.list(tenantId)
+    ]);
+
+    const start = new Date(`${startDate}T00:00:00`);
+    const end = new Date(`${endDate}T00:00:00`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return { error: 'Rango de fechas invalido' };
+    }
+
+    const rangeEnd = new Date(end);
+    rangeEnd.setDate(rangeEnd.getDate() + 1);
+
+    const servicePrices = new Map(services.map((service) => [service.id, Number(service.price || 0)]));
+    const barberMap = new Map(
+      users
+        .filter((user) => user.role === 'BARBER')
+        .map((user) => [user.id, user])
+    );
+
+    const commissionByBarber: Record<string, { barberId: string; barberName: string; rate: number; total: number; appointments: number }> = {};
+    const dailyTotals: Record<string, { date: string; grossRevenue: number; commissions: number }> = {};
+    let grossRevenue = 0;
+
+    appointments
+      .filter((appointment) => appointment.status === 'COMPLETADA')
+      .filter((appointment) => {
+        const startAt = new Date(appointment.startAt);
+        return startAt >= start && startAt < rangeEnd;
+      })
+      .forEach((appointment) => {
+        const price = servicePrices.get(appointment.serviceId) || 0;
+        grossRevenue += price;
+
+        const barber = barberMap.get(appointment.barberId);
+        const rate = barber?.commissionRate ?? 0.3;
+        const key = appointment.barberId;
+
+        if (!commissionByBarber[key]) {
+          commissionByBarber[key] = {
+            barberId: key,
+            barberName: barber?.name || 'Sin nombre',
+            rate,
+            total: 0,
+            appointments: 0
+          };
+        }
+
+        commissionByBarber[key].appointments += 1;
+        commissionByBarber[key].total += price * rate;
+
+        const dayKey = new Date(appointment.startAt).toISOString().split('T')[0];
+        if (!dailyTotals[dayKey]) {
+          dailyTotals[dayKey] = { date: dayKey, grossRevenue: 0, commissions: 0 };
+        }
+
+        dailyTotals[dayKey].grossRevenue += price;
+        dailyTotals[dayKey].commissions += price * rate;
+      });
+
+    const days = Object.values(dailyTotals)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((day) => ({
+        ...day,
+        grossRevenue: Number(day.grossRevenue.toFixed(2)),
+        commissions: Number(day.commissions.toFixed(2)),
+        netRevenue: Number((day.grossRevenue - day.commissions).toFixed(2))
+      }));
+
+    return {
+      start: start.toISOString().split('T')[0],
+      end: end.toISOString().split('T')[0],
+      grossRevenue: Number(grossRevenue.toFixed(2)),
+      commissions: Object.values(commissionByBarber).map((item) => ({
+        ...item,
+        total: Number(item.total.toFixed(2))
+      })),
+      days
+    };
+  };
+
   const reportsRoutes = createReportsRoutes({
     getSummary,
     getDaily,
+    getRange,
     authenticateJwt: authMiddleware,
     requireRoles: requireRolesMiddleware
   });

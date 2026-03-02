@@ -23,6 +23,12 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       price: Number(payload.price),
       stock: Number(payload.stock),
       active: payload.active ?? true,
+      lastCost: 0,
+      averageCost: 0,
+      totalPurchaseUnits: 0,
+      totalPurchaseCost: 0,
+      lastRestockedAt: undefined,
+      restocks: [],
       createdAt: new Date().toISOString()
     };
 
@@ -61,6 +67,36 @@ export class InMemoryInventoryRepository implements InventoryRepository {
     if (product.stock < quantity) return null;
 
     product.stock -= Math.abs(quantity);
+    return product;
+  }
+
+  async recordRestock(tenantId: string, input: { productId: string; quantity: number; unitCost: number; supplier?: string; arrivedAt?: string; }): Promise<ProductRecord | null> {
+    const product = database.inventory.find((item) => item.id === input.productId && item.tenantId === tenantId);
+    if (!product) return null;
+
+    const prevUnits = Number(product.totalPurchaseUnits || 0);
+    const prevCost = Number(product.totalPurchaseCost || 0);
+    const restockTotal = Number(input.unitCost) * Number(input.quantity);
+    const newUnits = prevUnits + Number(input.quantity);
+    const newCost = prevCost + restockTotal;
+    const averageCost = newUnits > 0 ? Number((newCost / newUnits).toFixed(4)) : 0;
+    const arrivedAt = input.arrivedAt || new Date().toISOString();
+
+    product.stock += Math.abs(Number(input.quantity));
+    product.lastCost = Number(input.unitCost);
+    product.averageCost = averageCost;
+    product.totalPurchaseUnits = newUnits;
+    product.totalPurchaseCost = newCost;
+    product.lastRestockedAt = arrivedAt;
+    product.restocks = product.restocks || [];
+    product.restocks.push({
+      date: arrivedAt,
+      supplier: input.supplier,
+      quantity: Number(input.quantity),
+      unitCost: Number(input.unitCost),
+      totalCost: restockTotal
+    });
+
     return product;
   }
 }

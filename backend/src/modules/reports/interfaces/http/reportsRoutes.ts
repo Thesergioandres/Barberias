@@ -5,11 +5,13 @@ import type { requireRoles } from '../../../../shared/interfaces/http/middleware
 export function createReportsRoutes({
   getSummary,
   getDaily,
+  getRange,
   authenticateJwt: authMiddleware,
   requireRoles: requireRolesMiddleware
 }: {
   getSummary: (tenantId: string) => Promise<Record<string, unknown>>;
   getDaily: (tenantId: string, date?: string) => Promise<Record<string, unknown>>;
+  getRange: (tenantId: string, start: string, end: string) => Promise<Record<string, unknown>>;
   authenticateJwt: ReturnType<typeof authenticateJwt>;
   requireRoles: typeof requireRoles;
 }) {
@@ -32,6 +34,26 @@ export function createReportsRoutes({
 
     const date = typeof req.query.date === 'string' ? req.query.date : undefined;
     const summary = await getDaily(tenantId, date);
+    res.json(summary);
+  });
+
+  router.get('/range', authMiddleware, requireRolesMiddleware('ADMIN'), async (req: Request, res: Response) => {
+    const tenantId = req.auth?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'Forbidden: No tenantId' });
+    }
+
+    const start = typeof req.query.start === 'string' ? req.query.start : undefined;
+    const end = typeof req.query.end === 'string' ? req.query.end : undefined;
+    if (!start || !end) {
+      return res.status(400).json({ message: 'start y end son requeridos (YYYY-MM-DD)' });
+    }
+
+    const summary = await getRange(tenantId, start, end);
+    if ('error' in summary) {
+      return res.status(400).json({ message: summary.error });
+    }
+
     res.json(summary);
   });
 

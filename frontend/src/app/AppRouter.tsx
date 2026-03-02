@@ -16,6 +16,8 @@ import { AdminAgendaPage } from '../modules/admin/pages/AdminAgendaPage';
 import { AdminTeamPage } from '../modules/admin/pages/AdminTeamPage';
 import { AdminBranchesPage } from '../modules/admin/pages/AdminBranchesPage';
 import { AdminWhatsAppPage } from '../modules/admin/pages/AdminWhatsAppPage';
+import { AdminInventoryPage } from '../modules/admin/pages/AdminInventoryPage';
+import { AdminReportsPage } from '../modules/admin/pages/AdminReportsPage';
 import { StaffDashboardPage } from '../modules/staff/StaffDashboardPage';
 import { GodPanelPage } from '../modules/god/GodPanelPage';
 import { CreateBarbershopPage } from '../modules/onboarding/CreateBarbershopPage';
@@ -90,6 +92,22 @@ export function AppRouter() {
             element={
               <RoleGuard allow={['ADMIN', 'GOD']}>
                 <AdminWhatsAppPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/inventory"
+            element={
+              <RoleGuard allow={['ADMIN', 'GOD']}>
+                <AdminInventoryPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <RoleGuard allow={['ADMIN', 'GOD']}>
+                <AdminReportsPage />
               </RoleGuard>
             }
           />

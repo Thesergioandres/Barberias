@@ -3,12 +3,15 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     react(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: true
+      },
       includeAssets: ['essence-icon.svg', 'essence-maskable.svg'],
       manifest: {
         name: 'ESSENCE FACTORY SAAS',
@@ -33,7 +36,14 @@ export default defineConfig({
       }
     })
   ],
+  resolve: {
+    alias: command === 'serve'
+      ? {
+        'virtual:pwa-register': '/src/shared/infrastructure/pwa/devRegisterSW.ts'
+      }
+      : {}
+  },
   server: {
     port: 5174
   }
-});
+}));

@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express';
-import type { InventoryRepository } from '../../application/ports/InventoryRepository';
+import type { InventoryRepository, RestockInput } from '../../application/ports/InventoryRepository';
 import type { CreateProductUseCase } from '../../application/use-cases/createProductUseCase';
+import type { RecordRestockUseCase } from '../../application/use-cases/recordRestockUseCase';
 import type { RecordSaleUseCase } from '../../application/use-cases/recordSaleUseCase';
 import type { authenticateJwt } from '../../../../shared/interfaces/http/middlewares/authenticateJwt';
 import type { requireRoles } from '../../../../shared/interfaces/http/middlewares/requireRoles';
@@ -8,12 +9,14 @@ import type { requireRoles } from '../../../../shared/interfaces/http/middleware
 export function createInventoryRoutes({
   inventoryRepository,
   createProductUseCase,
+  recordRestockUseCase,
   recordSaleUseCase,
   authenticateJwt: authMiddleware,
   requireRoles: requireRolesMiddleware
 }: {
   inventoryRepository: InventoryRepository;
   createProductUseCase: CreateProductUseCase;
+  recordRestockUseCase: RecordRestockUseCase;
   recordSaleUseCase: RecordSaleUseCase;
   authenticateJwt: ReturnType<typeof authenticateJwt>;
   requireRoles: typeof requireRoles;
@@ -79,6 +82,22 @@ export function createInventoryRoutes({
     }
 
     return res.json(result);
+  });
+
+  router.post('/restock', authMiddleware, requireRolesMiddleware('ADMIN'), async (req: Request, res: Response) => {
+    const tenantId = req.auth?.tenantId;
+    if (!tenantId) return res.status(403).json({ message: 'No tenantId' });
+
+    const result = await recordRestockUseCase.execute({
+      tenantId,
+      input: req.body as RestockInput
+    });
+
+    if ('error' in result) {
+      return res.status(result.statusCode).json({ message: result.error });
+    }
+
+    return res.json(result.product);
   });
 
   return router;

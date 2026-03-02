@@ -55,6 +55,12 @@ export function AppLayout() {
           <NavLink className={navLinkClass} to="/admin/whatsapp">
             WhatsApp
           </NavLink>
+            <NavLink className={navLinkClass} to="/admin/inventory">
+              Inventario
+            </NavLink>
+            <NavLink className={navLinkClass} to="/admin/reports">
+              Cierre diario
+            </NavLink>
           <NavLink className={navLinkClass} to="/staff">
             Staff
           </NavLink>

@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { registerSW } from 'virtual:pwa-register';
+import { registerSW } from './shared/infrastructure/pwa/registerSW';
 import App from './App';
 import { queryClient } from './shared/infrastructure/query/queryClient';
 import './styles.css';

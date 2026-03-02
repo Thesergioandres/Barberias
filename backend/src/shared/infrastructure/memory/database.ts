@@ -81,6 +81,18 @@ type Product = {
   price: number;
   stock: number;
   active: boolean;
+  lastCost?: number;
+  averageCost?: number;
+  totalPurchaseUnits?: number;
+  totalPurchaseCost?: number;
+  lastRestockedAt?: string;
+  restocks?: Array<{
+    date: string;
+    supplier?: string;
+    quantity: number;
+    unitCost: number;
+    totalCost: number;
+  }>;
   createdAt: string;
 };
 

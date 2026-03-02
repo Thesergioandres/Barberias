@@ -174,6 +174,7 @@ export function createUsersRoutes({
       active?: boolean;
       whatsappConsent?: boolean;
       password?: string;
+      commissionRate?: number;
     };
 
     if (payload.phone && !isE164(payload.phone)) {
@@ -188,6 +189,13 @@ export function createUsersRoutes({
       return res.status(403).json({ message: 'Solo GOD puede asignar rol GOD' });
     }
 
+    if (payload.commissionRate !== undefined) {
+      const rate = Number(payload.commissionRate);
+      if (Number.isNaN(rate) || rate < 0 || rate > 1) {
+        return res.status(400).json({ message: 'commissionRate debe ser entre 0 y 1' });
+      }
+    }
+
     const passwordHash = payload.password ? bcrypt.hashSync(payload.password, 10) : undefined;
     const updated = await usersRepository.update(req.params.id, {
       name: payload.name,
@@ -196,7 +204,8 @@ export function createUsersRoutes({
       role: payload.role as 'GOD' | 'ADMIN' | 'BARBER' | 'CLIENT' | undefined,
       active: payload.active,
       whatsappConsent: payload.whatsappConsent,
-      passwordHash
+      passwordHash,
+      commissionRate: payload.commissionRate
     });
 
     if (!updated) {

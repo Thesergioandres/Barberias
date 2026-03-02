@@ -2,7 +2,7 @@ import { ProductModel } from '../../../../shared/infrastructure/mongoose/models/
 import type { InventoryRepository, CreateProductInput, UpdateProductInput } from '../../application/ports/InventoryRepository';
 import type { ProductRecord } from '../../domain/entities/Product';
 
-function mapProduct(document: {
+type ProductDoc = {
   _id: { toString(): string };
   tenantId: string;
   name: string;
@@ -11,8 +11,22 @@ function mapProduct(document: {
   price: number;
   stock: number;
   active: boolean;
+  lastCost?: number;
+  averageCost?: number;
+  totalPurchaseUnits?: number;
+  totalPurchaseCost?: number;
+  lastRestockedAt?: Date | null;
+  restocks?: Array<{
+    date: Date;
+    supplier?: string;
+    quantity: number;
+    unitCost: number;
+    totalCost: number;
+  }>;
   createdAt?: Date;
-} | null): ProductRecord | null {
+} | null;
+
+function mapProduct(document: ProductDoc): ProductRecord | null {
   if (!document) {
     return null;
   }
@@ -26,19 +40,31 @@ function mapProduct(document: {
     price: document.price,
     stock: document.stock,
     active: document.active,
+    lastCost: document.lastCost,
+    averageCost: document.averageCost,
+    totalPurchaseUnits: document.totalPurchaseUnits,
+    totalPurchaseCost: document.totalPurchaseCost,
+    lastRestockedAt: document.lastRestockedAt ? document.lastRestockedAt.toISOString() : undefined,
+    restocks: document.restocks?.map((item) => ({
+      date: item.date.toISOString(),
+      supplier: item.supplier || undefined,
+      quantity: item.quantity,
+      unitCost: item.unitCost,
+      totalCost: item.totalCost
+    })),
     createdAt: document.createdAt ? document.createdAt.toISOString() : new Date().toISOString()
   };
 }
 
 export class MongoInventoryRepository implements InventoryRepository {
   async list(tenantId: string): Promise<ProductRecord[]> {
-    const docs = await ProductModel.find({ tenantId }).lean();
-    return docs.map((doc) => mapProduct(doc as typeof doc & { _id: { toString(): string } }) as ProductRecord);
+    const docs = await ProductModel.find({ tenantId }).lean<ProductDoc[]>();
+    return docs.map((doc) => mapProduct(doc) as ProductRecord);
   }
 
   async findById(id: string, tenantId: string): Promise<ProductRecord | null> {
-    const doc = await ProductModel.findOne({ _id: id, tenantId }).lean();
-    return mapProduct(doc as typeof doc & { _id: { toString(): string } });
+    const doc = await ProductModel.findOne({ _id: id, tenantId }).lean<ProductDoc>();
+    return mapProduct(doc);
   }
 
   async create(payload: CreateProductInput): Promise<ProductRecord> {
@@ -49,7 +75,13 @@ export class MongoInventoryRepository implements InventoryRepository {
       description: payload.description || '',
       price: Number(payload.price),
       stock: Number(payload.stock),
-      active: payload.active ?? true
+      active: payload.active ?? true,
+      lastCost: 0,
+      averageCost: 0,
+      totalPurchaseUnits: 0,
+      totalPurchaseCost: 0,
+      lastRestockedAt: null,
+      restocks: []
     });
 
     return mapProduct(doc.toObject() as typeof doc & { _id: { toString(): string } }) as ProductRecord;
@@ -64,8 +96,8 @@ export class MongoInventoryRepository implements InventoryRepository {
     if (payload.stock !== undefined) update.stock = Number(payload.stock);
     if (payload.active !== undefined) update.active = payload.active;
 
-    const doc = await ProductModel.findByIdAndUpdate(id, update, { new: true }).lean();
-    return mapProduct(doc as typeof doc & { _id: { toString(): string } });
+    const doc = await ProductModel.findByIdAndUpdate(id, update, { new: true }).lean<ProductDoc>();
+    return mapProduct(doc);
   }
 
   async delete(id: string, tenantId: string): Promise<boolean> {
@@ -78,8 +110,49 @@ export class MongoInventoryRepository implements InventoryRepository {
       { _id: id, tenantId, stock: { $gte: quantity } },
       { $inc: { stock: -Math.abs(quantity) } },
       { new: true }
-    ).lean();
+    ).lean<ProductDoc>();
 
-    return mapProduct(doc as typeof doc & { _id: { toString(): string } });
+    return mapProduct(doc);
+  }
+
+  async recordRestock(tenantId: string, input: { productId: string; quantity: number; unitCost: number; supplier?: string; arrivedAt?: string; }): Promise<ProductRecord | null> {
+    const existing = await ProductModel.findOne({ _id: input.productId, tenantId }).lean<ProductDoc>();
+    if (!existing) {
+      return null;
+    }
+
+    const prevUnits = Number(existing.totalPurchaseUnits || 0);
+    const prevCost = Number(existing.totalPurchaseCost || 0);
+    const newUnits = prevUnits + Number(input.quantity);
+    const restockTotal = Number(input.unitCost) * Number(input.quantity);
+    const newCost = prevCost + restockTotal;
+    const averageCost = newUnits > 0 ? Number((newCost / newUnits).toFixed(4)) : 0;
+    const arrivedAt = input.arrivedAt ? new Date(input.arrivedAt) : new Date();
+
+    const doc = await ProductModel.findOneAndUpdate(
+      { _id: input.productId, tenantId },
+      {
+        $inc: { stock: Math.abs(Number(input.quantity)) },
+        $set: {
+          lastCost: Number(input.unitCost),
+          averageCost,
+          totalPurchaseUnits: newUnits,
+          totalPurchaseCost: newCost,
+          lastRestockedAt: arrivedAt
+        },
+        $push: {
+          restocks: {
+            date: arrivedAt,
+            supplier: input.supplier || '',
+            quantity: Number(input.quantity),
+            unitCost: Number(input.unitCost),
+            totalCost: restockTotal
+          }
+        }
+      },
+      { new: true }
+    ).lean<ProductDoc>();
+
+    return mapProduct(doc);
   }
 }

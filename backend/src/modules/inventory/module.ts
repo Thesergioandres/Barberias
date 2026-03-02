@@ -1,6 +1,7 @@
 import { InMemoryInventoryRepository } from './infrastructure/persistence/InMemoryInventoryRepository';
 import { MongoInventoryRepository } from './infrastructure/persistence/MongoInventoryRepository';
 import { CreateProductUseCase } from './application/use-cases/createProductUseCase';
+import { RecordRestockUseCase } from './application/use-cases/recordRestockUseCase';
 import { RecordSaleUseCase } from './application/use-cases/recordSaleUseCase';
 import { createInventoryRoutes } from './interfaces/http/inventoryRoutes';
 import type { authenticateJwt } from '../../shared/interfaces/http/middlewares/authenticateJwt';
@@ -17,11 +18,13 @@ export function createInventoryModule({
 }) {
   const inventoryRepository = useMongo ? new MongoInventoryRepository() : new InMemoryInventoryRepository();
   const createProductUseCase = new CreateProductUseCase({ inventoryRepository });
+  const recordRestockUseCase = new RecordRestockUseCase({ inventoryRepository });
   const recordSaleUseCase = new RecordSaleUseCase({ inventoryRepository });
 
   const inventoryRoutes = createInventoryRoutes({
     inventoryRepository,
     createProductUseCase,
+    recordRestockUseCase,
     recordSaleUseCase,
     authenticateJwt: authMiddleware,
     requireRoles: requireRolesMiddleware

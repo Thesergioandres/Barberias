@@ -17,6 +17,14 @@ export type SaleItemInput = {
   quantity: number;
 };
 
+export type RestockInput = {
+  productId: string;
+  quantity: number;
+  unitCost: number;
+  supplier?: string;
+  arrivedAt?: string;
+};
+
 export interface InventoryRepository {
   list(tenantId: string): Promise<ProductRecord[]>;
   findById(id: string, tenantId: string): Promise<ProductRecord | null>;
@@ -24,4 +32,5 @@ export interface InventoryRepository {
   update(id: string, input: UpdateProductInput): Promise<ProductRecord | null>;
   delete(id: string, tenantId: string): Promise<boolean>;
   decrementStock(tenantId: string, id: string, quantity: number): Promise<ProductRecord | null>;
+  recordRestock(tenantId: string, input: RestockInput): Promise<ProductRecord | null>;
 }
