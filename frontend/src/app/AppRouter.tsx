@@ -11,6 +11,8 @@ import { LoginCard } from '../shared/components/LoginCard';
 import { WaitingApprovalPage } from '../modules/auth/presentation/pages/WaitingApprovalPage';
 import { BookingEnginePage } from '../modules/client/BookingEnginePage';
 import { LandingPage } from '../modules/landing/LandingPage';
+import { BarberiasLandingPage } from '../modules/landing/BarberiasLandingPage';
+import { BarberiasClientLoginPage } from '../modules/landing/BarberiasClientLoginPage';
 import { AdminHomePage } from '../modules/admin/pages/AdminHomePage';
 import { AdminAgendaPage } from '../modules/admin/pages/AdminAgendaPage';
 import { AdminTeamPage } from '../modules/admin/pages/AdminTeamPage';
@@ -50,7 +52,13 @@ export function AppRouter() {
 
     const appRoutes = createRoutesFromElements(
       <>
-        <Route path="/login" element={<LoginCard title="Acceso" subtitle="Usa tu cuenta para gestionar la plataforma." />} />
+        <Route path="/login" element={
+          <LoginCard
+            title="Acceso"
+            subtitle="Usa tu cuenta para gestionar la plataforma."
+            allowedRoles={['ADMIN', 'BARBER', 'GOD']}
+          />
+        } />
         <Route path="/waiting" element={<WaitingApprovalPage />} />
         <Route path="/onboarding" element={<CreateBarbershopPage />} />
         <Route element={<AppLayout />}>
@@ -135,8 +143,25 @@ export function AppRouter() {
     const landingRoutes = createRoutesFromElements(
       <Route element={<LandingLayout />}>
         <Route index element={<LandingPage />} />
+        <Route path="/barberias-landing" element={<BarberiasLandingPage />} />
+        <Route path="/barberias-landing" element={<BarberiasLandingPage />} />
+        <Route path="/barberias-login" element={
+          <LoginCard
+            title="Acceso barberias"
+            subtitle="Login para duenos y staff."
+            allowedRoles={['ADMIN', 'BARBER']}
+          />
+        } />
+        <Route path="/barberias-client-login" element={<BarberiasClientLoginPage />} />
+        <Route path="/admin-login" element={
+          <LoginCard
+            title="Login administradores"
+            subtitle="Acceso exclusivo para GOD."
+            allowedRoles={['GOD']}
+            redirectTo="/god"
+          />
+        } />
         <Route path="/onboarding" element={<CreateBarbershopPage />} />
-        <Route path="/login" element={<LoginCard title="Acceso" subtitle="Usa tu cuenta para gestionar la plataforma." />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     );

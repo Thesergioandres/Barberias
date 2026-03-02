@@ -14,7 +14,7 @@ export type SessionUser = {
 type AuthContextValue = {
   user: SessionUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<SessionUser>;
   logout: () => void;
 };
 
@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setAuthToken(result.token);
     setUser(result.user);
+    return result.user;
   }, []);
 
   const logout = useCallback(() => {

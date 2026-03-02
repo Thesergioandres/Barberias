@@ -14,8 +14,8 @@ export function LandingLayout() {
               <p className="mt-2 text-sm text-muted">Marca, permisos y rutas por tenant en tiempo real.</p>
             </div>
           </div>
-          <a className="btn-primary" href="/login">
-            Entrar al panel
+          <a className="btn-primary" href="/admin-login">
+            Login para administradores
           </a>
         </div>
       </header>

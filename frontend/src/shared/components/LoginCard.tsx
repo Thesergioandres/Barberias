@@ -1,24 +1,53 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 type LoginCardProps = {
   title?: string;
   subtitle?: string;
   demoHint?: string;
+  allowedRoles?: Array<'GOD' | 'ADMIN' | 'BARBER' | 'CLIENT'>;
+  redirectTo?: string;
 };
 
-export function LoginCard({ title = 'Iniciar sesion', subtitle, demoHint }: LoginCardProps) {
-  const { login } = useAuth();
+const defaultRedirectByRole = {
+  GOD: '/god',
+  ADMIN: '/admin',
+  BARBER: '/staff',
+  CLIENT: '/'
+} as const;
+
+export function LoginCard({ title = 'Iniciar sesion', subtitle, demoHint, allowedRoles, redirectTo }: LoginCardProps) {
+  const { login, logout, user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (!user) return;
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+      logout();
+      setError('No tienes permisos para este acceso.');
+      return;
+    }
+
+    const state = location.state as { from?: string } | null;
+    const fallback = redirectTo || defaultRedirectByRole[user.role] || '/';
+    navigate(state?.from || fallback, { replace: true });
+  }, [allowedRoles, location.state, logout, navigate, redirectTo, user]);
+
   const handleLogin = async () => {
     setError(null);
     setLoading(true);
     try {
-      await login(email, password);
+      const loggedUser = await login(email, password);
+      if (allowedRoles && !allowedRoles.includes(loggedUser.role)) {
+        logout();
+        setError('No tienes permisos para este acceso.');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo iniciar sesion');
     } finally {
