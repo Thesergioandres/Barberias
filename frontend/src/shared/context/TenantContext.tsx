@@ -3,6 +3,7 @@ import { apiRequest } from '../infrastructure/http/apiClient';
 import { useAuth } from './AuthContext';
 import { resolveHostContext } from '../utils/host';
 import { VERTICALS_REGISTRY } from '../constants/verticalsRegistry';
+import type { BusinessHour } from '../utils/businessHours';
 
 export type TenantRecord = {
   id: string;
@@ -19,6 +20,7 @@ export type TenantRecord = {
   };
   logoUrl?: string | null;
   status?: string;
+  businessHours?: BusinessHour[];
 };
 
 type TenantContextValue = {
@@ -53,9 +55,9 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     document.title = nextTenant?.name ? `${nextTenant.name} - ESSENCE FACTORY SAAS` : 'ESSENCE FACTORY SAAS';
   }, []);
 
-  // Auto-resolve tenant for ADMIN or STAFF roles based on their tied tenantId
+  // Auto-resolve tenant for ADMIN/OWNER or STAFF roles based on their tied tenantId
   useEffect(() => {
-    if (user && (user.role === 'ADMIN' || user.role === 'STAFF') && user.tenantId && !tenant) {
+    if (user && (user.role === 'ADMIN' || user.role === 'OWNER' || user.role === 'STAFF') && user.tenantId && !tenant) {
       setLoading(true);
       apiRequest<TenantRecord>(`/tenants/${user.tenantId}`)
         .then((data) => {

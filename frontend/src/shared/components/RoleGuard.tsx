@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export function RoleGuard({ allow, children }: { allow: Array<'GOD' | 'ADMIN' | 'STAFF' | 'CLIENT'>; children: ReactNode }) {
+export function RoleGuard({ allow, children }: { allow: Array<'GOD' | 'OWNER' | 'ADMIN' | 'STAFF' | 'CLIENT'>; children: ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -18,7 +18,7 @@ export function RoleGuard({ allow, children }: { allow: Array<'GOD' | 'ADMIN' | 
     return <Navigate to="/login" replace />;
   }
 
-  if (user.approved === false && user.role !== 'GOD' && user.role !== 'ADMIN') {
+  if (user.approved === false && user.role !== 'GOD' && user.role !== 'OWNER' && user.role !== 'ADMIN') {
     return <Navigate to="/waiting" replace />;
   }
 

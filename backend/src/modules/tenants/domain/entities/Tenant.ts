@@ -11,6 +11,12 @@ type TenantProps = {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  businessHours?: Array<{
+    day: number;
+    openTime: string;
+    closeTime: string;
+    isOpen: boolean;
+  }>;
   customColors?: {
     primary?: string;
     secondary?: string;
@@ -48,6 +54,12 @@ export class Tenant {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  businessHours: Array<{
+    day: number;
+    openTime: string;
+    closeTime: string;
+    isOpen: boolean;
+  }>;
   customColors?: {
     primary?: string;
     secondary?: string;
@@ -82,6 +94,15 @@ export class Tenant {
     this.subdomain = props.subdomain;
     this.verticalSlug = props.verticalSlug;
     this.activeModules = props.activeModules;
+    this.businessHours = props.businessHours ?? [
+      { day: 0, openTime: '09:00', closeTime: '18:00', isOpen: true },
+      { day: 1, openTime: '09:00', closeTime: '18:00', isOpen: true },
+      { day: 2, openTime: '09:00', closeTime: '18:00', isOpen: true },
+      { day: 3, openTime: '09:00', closeTime: '18:00', isOpen: true },
+      { day: 4, openTime: '09:00', closeTime: '18:00', isOpen: true },
+      { day: 5, openTime: '09:00', closeTime: '18:00', isOpen: true },
+      { day: 6, openTime: '09:00', closeTime: '18:00', isOpen: true }
+    ];
     this.customColors = props.customColors;
     this.logoUrl = props.logoUrl ?? null;
     this.status = props.status;

@@ -7,7 +7,7 @@ type Profile = {
   name: string;
   email: string;
   phone: string;
-  role: 'ADMIN' | 'STAFF' | 'CLIENT';
+  role: 'OWNER' | 'ADMIN' | 'STAFF' | 'CLIENT';
   whatsappConsent: boolean;
 };
 

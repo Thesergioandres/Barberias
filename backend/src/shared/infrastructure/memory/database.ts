@@ -39,6 +39,12 @@ type Tenant = {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  businessHours?: Array<{
+    day: number;
+    openTime: string;
+    closeTime: string;
+    isOpen: boolean;
+  }>;
   planId: string;
   planName?: string;
   status: string;
@@ -177,6 +183,15 @@ export const database: {
       subdomain: 'essence',
       verticalSlug: 'default',
       activeModules: [],
+      businessHours: [
+        { day: 0, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 1, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 2, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 3, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 4, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 5, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 6, openTime: '09:00', closeTime: '18:00', isOpen: true }
+      ],
       planId: 'plan_pro',
       planName: 'Pro',
       status: 'active',

@@ -68,8 +68,24 @@ const MODULE_DEFINITIONS: Record<string, { label: string; description: string }>
     description: 'Documentos y aprobaciones centralizadas.'
   },
   commissions: {
-    label: 'Comisiones',
-    description: 'Liquidaciones automaticas por servicio.'
+    label: 'Liquidacion automatica',
+    description: 'Calcula y gestiona los pagos de tu equipo por cada servicio o venta realizada.'
+  },
+  order_management: {
+    label: 'Centro de pedidos',
+    description: 'Centraliza tus ventas fisicas, online y domicilios en una sola pantalla inteligente.'
+  },
+  shipping_tracking: {
+    label: 'Logistica y rastreo',
+    description: 'Gestiona despachos y permite que tus clientes sigan su pedido en tiempo real.'
+  },
+  multi_vendor: {
+    label: 'Ecosistema marketplace',
+    description: 'Permite que multiples vendedores operen en tu plataforma bajo tu control.'
+  },
+  ecommerce_storefront: {
+    label: 'Vitrina global',
+    description: 'Tu negocio abierto al mundo 24/7 con diseno de alta conversion.'
   }
 };
 

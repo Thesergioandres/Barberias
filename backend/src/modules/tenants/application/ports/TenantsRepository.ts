@@ -5,6 +5,12 @@ export interface TenantEntity {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  businessHours?: Array<{
+    day: number;
+    openTime: string;
+    closeTime: string;
+    isOpen: boolean;
+  }>;
   status: string;
   planId: string;
   planName?: string;

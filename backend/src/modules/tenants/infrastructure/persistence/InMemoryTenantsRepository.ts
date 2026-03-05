@@ -6,6 +6,7 @@ function mapTenant(tenant: TenantEntity): TenantEntity {
   return {
     ...tenant,
     customColors: tenant.customColors ? { ...tenant.customColors } : undefined,
+    businessHours: tenant.businessHours ? tenant.businessHours.map((entry) => ({ ...entry })) : undefined,
     config: {
       ...tenant.config,
       reminderMinutes: [...tenant.config.reminderMinutes],
@@ -50,6 +51,9 @@ export class InMemoryTenantsRepository implements TenantsRepository {
     if (input.subdomain !== undefined) tenant.subdomain = input.subdomain;
     if (input.verticalSlug !== undefined) tenant.verticalSlug = input.verticalSlug;
     if (input.activeModules !== undefined) tenant.activeModules = [...input.activeModules];
+    if (input.businessHours !== undefined) {
+      tenant.businessHours = input.businessHours.map((entry) => ({ ...entry }));
+    }
     if (input.status !== undefined) tenant.status = input.status;
     if (input.planId !== undefined) tenant.planId = input.planId;
     if (input.planName !== undefined) tenant.planName = input.planName;

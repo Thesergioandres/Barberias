@@ -8,6 +8,12 @@ type TenantDocument = {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  businessHours: Array<{
+    day: number;
+    openTime: string;
+    closeTime: string;
+    isOpen: boolean;
+  }>;
   email?: string | null;
   phone?: string | null;
   customColors?: {
@@ -43,6 +49,25 @@ const tenantSchema = new mongoose.Schema<TenantDocument>(
     subdomain: { type: String, required: true, unique: true, index: true },
     verticalSlug: { type: String, required: true, index: true },
     activeModules: { type: [String], default: [] },
+    businessHours: {
+      type: [
+        {
+          day: { type: Number, required: true },
+          openTime: { type: String, required: true },
+          closeTime: { type: String, required: true },
+          isOpen: { type: Boolean, default: true }
+        }
+      ],
+      default: () => [
+        { day: 0, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 1, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 2, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 3, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 4, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 5, openTime: '09:00', closeTime: '18:00', isOpen: true },
+        { day: 6, openTime: '09:00', closeTime: '18:00', isOpen: true }
+      ]
+    },
     email: { type: String, default: null },
     phone: { type: String, default: null },
     customColors: {

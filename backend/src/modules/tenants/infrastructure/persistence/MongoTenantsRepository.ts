@@ -9,6 +9,7 @@ function mapTenant(document: {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  businessHours?: Array<{ day: number; openTime: string; closeTime: string; isOpen: boolean }>;
   planId: string;
   status: string;
   validUntil?: Date | null;
@@ -28,6 +29,7 @@ function mapTenant(document: {
     subdomain: document.subdomain,
     verticalSlug: document.verticalSlug,
     activeModules: document.activeModules || [],
+    businessHours: document.businessHours,
     planId: document.planId,
     planName,
     status: document.status,

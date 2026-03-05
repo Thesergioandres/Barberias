@@ -12,12 +12,14 @@ export function AppLayout() {
   const { tenant } = useTenant();
   const activeModules = tenant?.activeModules || [];
   const isGod = user?.role === 'GOD';
+  const isOwner = user?.role === 'OWNER';
+  const staffAllowedModules = new Set(['agenda', 'inventory', 'pos', 'tables']);
 
   const adminModules = Object.values(moduleRegistry).filter(
-    (module) => module.adminPath && (isGod || activeModules.includes(module.key))
+    (module) => module.adminPath && (isGod || isOwner || activeModules.includes(module.key))
   );
   const staffModules = Object.values(moduleRegistry).filter(
-    (module) => module.staffPath && (isGod || activeModules.includes(module.key))
+    (module) => module.adminPath && staffAllowedModules.has(module.key) && activeModules.includes(module.key)
   );
 
   return (
@@ -50,12 +52,12 @@ export function AppLayout() {
 
       <div className="app-container">
         <nav className="mt-6 flex flex-wrap gap-2">
-          {user?.role === 'ADMIN' || user?.role === 'GOD' ? (
+          {user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'GOD' ? (
             <NavLink className={navLinkClass} to="/admin">
               Dashboard
             </NavLink>
           ) : null}
-          {(user?.role === 'ADMIN' || user?.role === 'GOD')
+          {(user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'GOD')
             ? adminModules.map((module) => (
                 <NavLink key={module.key} className={navLinkClass} to={module.adminPath as string}>
                   {module.label}
@@ -64,8 +66,8 @@ export function AppLayout() {
             : null}
           {user?.role === 'STAFF'
             ? staffModules.map((module) => (
-                <NavLink key={module.key} className={navLinkClass} to={module.staffPath as string}>
-                  {module.staffLabel || module.label}
+                <NavLink key={module.key} className={navLinkClass} to={module.adminPath as string}>
+                  {module.label}
                 </NavLink>
               ))
             : null}

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useCart } from '../../../shared/context/CartContext';
+import { useTenant } from '../../../shared/context/TenantContext';
+import { getBusinessStatus } from '../../../shared/utils/businessHours';
 
 type CartDrawerProps = {
   isOpen: boolean;
@@ -14,9 +16,12 @@ const formatPhone = (phone?: string | null) => {
 
 export function CartDrawer({ isOpen, onClose, tenantPhone }: CartDrawerProps) {
   const { items, addItem, removeItem, clearCart, totalAmount } = useCart();
+  const { tenant } = useTenant();
   const phone = formatPhone(tenantPhone);
   const [deliveryMode, setDeliveryMode] = useState<'pickup' | 'delivery'>('pickup');
   const [address, setAddress] = useState('');
+  const { isOpen: isBusinessOpen, nextOpenLabel } = getBusinessStatus(tenant?.businessHours);
+  const isCheckoutDisabled = items.length === 0 || !phone || !isBusinessOpen;
 
   const orderMessage = useMemo(() => {
     const list = items
@@ -117,9 +122,9 @@ export function CartDrawer({ isOpen, onClose, tenantPhone }: CartDrawerProps) {
               href={whatsappLink}
               target="_blank"
               rel="noreferrer"
-              aria-disabled={!phone || items.length === 0}
+              aria-disabled={isCheckoutDisabled}
               onClick={(event) => {
-                if (!phone || items.length === 0) {
+                if (isCheckoutDisabled) {
                   event.preventDefault();
                 }
               }}
@@ -127,6 +132,11 @@ export function CartDrawer({ isOpen, onClose, tenantPhone }: CartDrawerProps) {
               Finalizar compra
             </a>
           </div>
+          {!isBusinessOpen ? (
+            <p className="mt-3 text-xs text-secondary">
+              El establecimiento esta cerrado en este momento. Volvemos el {nextOpenLabel}.
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

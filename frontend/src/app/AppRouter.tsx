@@ -38,7 +38,9 @@ export function AppRouter() {
   const defaultAppPath = user
     ? user.role === 'GOD'
       ? '/god'
-      : user.role === 'ADMIN'
+      : user.role === 'OWNER'
+        ? '/admin'
+        : user.role === 'ADMIN'
         ? '/admin'
         : user.role === 'STAFF'
           ? '/staff/dashboard'
@@ -51,7 +53,7 @@ export function AppRouter() {
       const location = useLocation();
       const role = user?.role;
 
-      if (role !== 'ADMIN' && role !== 'STAFF') {
+      if (role !== 'ADMIN' && role !== 'OWNER' && role !== 'STAFF') {
         return children;
       }
 
@@ -69,14 +71,16 @@ export function AppRouter() {
 
       return children;
     };
+    const staffAllowedModules = new Set(['agenda', 'inventory', 'pos', 'tables']);
     const moduleRoutes = Object.values(moduleRegistry).flatMap((module) => {
+      const staffAllowed = staffAllowedModules.has(module.key);
       const routes: Array<{ key: string; path: string; element: ReactElement }> = [];
       if (module.adminPath && module.adminElement) {
         routes.push({
           key: `${module.key}-admin`,
           path: module.adminPath,
           element: (
-            <RoleGuard allow={['ADMIN', 'GOD']}>
+            <RoleGuard allow={staffAllowed ? ['ADMIN', 'OWNER', 'GOD', 'STAFF'] : ['ADMIN', 'OWNER', 'GOD']}>
               <ModuleGuard allow={[module.key]}>{module.adminElement}</ModuleGuard>
             </RoleGuard>
           )
@@ -87,7 +91,7 @@ export function AppRouter() {
           key: `${module.key}-staff`,
           path: module.staffPath,
           element: (
-            <RoleGuard allow={['STAFF', 'ADMIN', 'GOD']}>
+            <RoleGuard allow={['STAFF', 'ADMIN', 'OWNER', 'GOD']}>
               <ModuleGuard allow={[module.key]}>{module.staffElement}</ModuleGuard>
             </RoleGuard>
           )
@@ -111,7 +115,7 @@ export function AppRouter() {
           <LoginCard
             title="Acceso"
             subtitle="Usa tu cuenta para gestionar la plataforma."
-            allowedRoles={['ADMIN', 'STAFF', 'GOD']}
+            allowedRoles={['ADMIN', 'OWNER', 'STAFF', 'GOD']}
           />
         } />
         <Route path="/waiting" element={<WaitingApprovalPage />} />
@@ -121,7 +125,7 @@ export function AppRouter() {
           <Route
             path="/admin"
             element={
-              <RoleGuard allow={['ADMIN', 'GOD']}>
+              <RoleGuard allow={['ADMIN', 'OWNER', 'GOD']}>
                 <AdminHomePage />
               </RoleGuard>
             }
@@ -160,7 +164,7 @@ export function AppRouter() {
           <LoginCard
             title="Acceso barberias"
             subtitle="Login para duenos y staff."
-            allowedRoles={['ADMIN', 'STAFF']}
+            allowedRoles={['ADMIN', 'OWNER', 'STAFF']}
           />
         } />
         <Route path="/barberias-client-login" element={<BarberiasClientLoginPage />} />

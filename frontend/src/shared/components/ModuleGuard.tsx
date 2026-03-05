@@ -8,6 +8,7 @@ export function ModuleGuard({ allow, children }: { allow: ModuleKey[]; children:
   const { user } = useAuth();
   const { tenant, loading } = useTenant();
   const location = useLocation();
+  const staffAllowedModules = new Set(['agenda', 'inventory', 'pos', 'tables']);
 
   if (loading) {
     return <div className="app-card">Cargando modulos...</div>;
@@ -17,8 +18,12 @@ export function ModuleGuard({ allow, children }: { allow: ModuleKey[]; children:
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  if (user.role === 'GOD' || allow.length === 0) {
+  if (user.role === 'GOD' || user.role === 'OWNER' || allow.length === 0) {
     return <>{children}</>;
+  }
+
+  if (user.role === 'STAFF' && !allow.some((moduleKey) => staffAllowedModules.has(moduleKey))) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
   const activeModules = tenant?.activeModules || [];

@@ -8,7 +8,7 @@ export function requireRoles(...allowedRoles: UserRole[]) {
       return res.status(403).json({ message: 'No autorizado para esta acción' });
     }
 
-    if (userRole === 'GOD') {
+    if (userRole === 'GOD' || userRole === 'OWNER') {
       return next();
     }
 

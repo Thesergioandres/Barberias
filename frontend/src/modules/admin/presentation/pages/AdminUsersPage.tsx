@@ -8,7 +8,7 @@ type User = {
   name: string;
   email: string;
   phone: string;
-  role: 'GOD' | 'ADMIN' | 'STAFF' | 'CLIENT';
+  role: 'GOD' | 'OWNER' | 'ADMIN' | 'STAFF' | 'CLIENT';
   active: boolean;
   whatsappConsent: boolean;
   approved: boolean;
@@ -121,6 +121,7 @@ export function AdminUsersPage() {
             onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value }))}
           >
             {user?.role === 'GOD' ? <option value="GOD">God</option> : null}
+            {user?.role === 'GOD' ? <option value="OWNER">Owner</option> : null}
             <option value="STAFF">Staff</option>
             <option value="CLIENT">Cliente</option>
             <option value="ADMIN">Admin</option>
@@ -159,6 +160,7 @@ export function AdminUsersPage() {
                   onChange={(event) => updateUser(user.id, { role: event.target.value as User['role'] })}
                 >
                   {user?.role === 'GOD' ? <option value="GOD">GOD</option> : null}
+                  {user?.role === 'GOD' ? <option value="OWNER">OWNER</option> : null}
                   <option value="ADMIN">ADMIN</option>
                   <option value="STAFF">STAFF</option>
                   <option value="CLIENT">CLIENT</option>

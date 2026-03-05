@@ -136,5 +136,30 @@ export function createTenantsRoutes(deps: {
     return res.json(updated);
   });
 
+  router.patch('/:id', deps.authenticateJwt, deps.requireRoles('ADMIN', 'OWNER'), async (req: Request, res: Response) => {
+    const requester = req.auth;
+    if (!requester) {
+      return res.status(403).json({ message: 'No autorizado' });
+    }
+    if (requester.role !== 'GOD' && requester.role !== 'OWNER' && requester.tenantId !== req.params.id) {
+      return res.status(403).json({ message: 'No autorizado para este tenant' });
+    }
+
+    const { businessHours } = req.body as {
+      businessHours?: Array<{ day: number; openTime: string; closeTime: string; isOpen: boolean }>;
+    };
+
+    if (!businessHours || !Array.isArray(businessHours)) {
+      return res.status(400).json({ message: 'businessHours es requerido' });
+    }
+
+    const updated = await deps.tenantsRepository.update(req.params.id, { businessHours });
+    if (!updated) {
+      return res.status(404).json({ message: 'Tenant no encontrado' });
+    }
+
+    return res.json(updated);
+  });
+
   return router;
 }

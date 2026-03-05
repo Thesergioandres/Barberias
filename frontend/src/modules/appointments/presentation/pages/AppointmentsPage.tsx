@@ -7,7 +7,7 @@ import { LoginCard } from '../../../../shared/components/LoginCard';
 type User = {
   id: string;
   name: string;
-  role: 'GOD' | 'ADMIN' | 'STAFF' | 'CLIENT';
+  role: 'GOD' | 'OWNER' | 'ADMIN' | 'STAFF' | 'CLIENT';
   email?: string;
   approved?: boolean;
 };

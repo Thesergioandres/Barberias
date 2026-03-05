@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTenant } from '../../shared/context/TenantContext';
 import { apiRequest } from '../../shared/infrastructure/http/apiClient';
 import { useLabels } from '../../shared/hooks/useLabels';
+import { getBusinessStatus } from '../../shared/utils/businessHours';
 
 type StaffMember = {
   id: string;
@@ -53,6 +54,7 @@ export function BookingEnginePage() {
   const hasAgenda = activeModules.includes('agenda');
   const hasStorefront = activeModules.includes('ecommerce_storefront');
   const showCrossNav = hasAgenda && hasStorefront;
+  const { isOpen: isBusinessOpen, nextOpenLabel } = getBusinessStatus(tenant?.businessHours);
 
   const steps = useMemo(() => {
     const list = [labels.service];
@@ -209,10 +211,15 @@ export function BookingEnginePage() {
           <button className="btn-secondary" type="button" onClick={goBack} disabled={stepIndex === 0}>
             Volver
           </button>
-          <button className="btn-primary" type="button" disabled={!selection[currentStep]}>
+          <button className="btn-primary" type="button" disabled={!selection[currentStep] || !isBusinessOpen}>
             Confirmar
           </button>
         </div>
+        {!isBusinessOpen ? (
+          <p className="mt-3 text-xs text-secondary">
+            El establecimiento esta cerrado en este momento. Volvemos el {nextOpenLabel}.
+          </p>
+        ) : null}
       </div>
 
       <div className="app-card">

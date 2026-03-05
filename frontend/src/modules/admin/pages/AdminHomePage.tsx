@@ -1,9 +1,11 @@
-import { ChangeEvent, useMemo, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { PlanGuard } from '../../../shared/components/PlanGuard';
 import { useTenant, type TenantRecord } from '../../../shared/context/TenantContext';
 import { useLabels } from '../../../shared/hooks/useLabels';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '../../../shared/infrastructure/http/apiClient';
+import { BusinessHoursSettings } from '../presentation/components/BusinessHoursSettings';
+import { createDefaultBusinessHours, type BusinessHour } from '../../../shared/utils/businessHours';
 import {
   Line,
   LineChart,
@@ -27,6 +29,10 @@ export function AdminHomePage() {
   const [copied, setCopied] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [businessHours, setBusinessHours] = useState<BusinessHour[]>(createDefaultBusinessHours());
+  const [hoursSaving, setHoursSaving] = useState(false);
+  const [hoursError, setHoursError] = useState<string | null>(null);
+  const [hoursSuccess, setHoursSuccess] = useState(false);
   const activeModules = tenant?.activeModules || [];
   const isBarbershop = (tenant?.verticalSlug || '').toLowerCase() === 'barberias';
 
@@ -75,6 +81,15 @@ export function AdminHomePage() {
     return `${window.location.protocol}//${tenant.subdomain}.${baseDomain}`;
   }, [tenant?.subdomain]);
 
+  useEffect(() => {
+    if (!tenant) return;
+    setBusinessHours(
+      tenant.businessHours && tenant.businessHours.length === 7
+        ? tenant.businessHours
+        : createDefaultBusinessHours()
+    );
+  }, [tenant]);
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(publicUrl);
@@ -111,6 +126,52 @@ export function AdminHomePage() {
       setLogoError(err.message || 'No se pudo actualizar el logo');
     } finally {
       setLogoUploading(false);
+    }
+  };
+
+  const hasInvalidHours = (hours: BusinessHour[]) => {
+    return hours.some((entry) => {
+      if (!entry.isOpen) return false;
+      const [openHours, openMinutes] = entry.openTime.split(':').map((value) => Number(value));
+      const [closeHours, closeMinutes] = entry.closeTime.split(':').map((value) => Number(value));
+      const openTotal = openHours * 60 + openMinutes;
+      const closeTotal = closeHours * 60 + closeMinutes;
+      return Number.isNaN(openTotal) || Number.isNaN(closeTotal) || closeTotal <= openTotal;
+    });
+  };
+
+  const handleSaveHours = async () => {
+    if (!tenant?.id) return;
+    setHoursError(null);
+    setHoursSuccess(false);
+
+    if (hasInvalidHours(businessHours)) {
+      setHoursError('Corrige los horarios: la hora de cierre debe ser posterior a la de apertura.');
+      return;
+    }
+
+    setHoursSaving(true);
+    try {
+      const payload = businessHours
+        .map((entry) => ({
+          day: entry.day,
+          openTime: entry.openTime,
+          closeTime: entry.closeTime,
+          isOpen: entry.isOpen
+        }))
+        .sort((a, b) => a.day - b.day);
+
+      const updated = await apiRequest<TenantRecord>(`/tenants/${tenant.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ businessHours: payload })
+      });
+      setTenant(updated);
+      setHoursSuccess(true);
+      window.setTimeout(() => setHoursSuccess(false), 2500);
+    } catch (err: any) {
+      setHoursError(err.message || 'No se pudo guardar los horarios');
+    } finally {
+      setHoursSaving(false);
     }
   };
 
@@ -210,6 +271,21 @@ export function AdminHomePage() {
               disabled={logoUploading}
             />
           </label>
+        </div>
+      </div>
+
+      <div className="app-card">
+        <h3 className="text-lg font-semibold">Horarios de atencion</h3>
+        <p className="mt-2 text-sm text-muted">Define los dias laborables y su rango de apertura.</p>
+        {hoursError ? <p className="mt-3 text-sm text-secondary">{hoursError}</p> : null}
+        {hoursSuccess ? <p className="mt-3 text-sm text-primary">Horarios guardados.</p> : null}
+        <div className="mt-4">
+          <BusinessHoursSettings value={businessHours} onChange={setBusinessHours} />
+        </div>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button className="btn-primary" type="button" onClick={handleSaveHours} disabled={hoursSaving}>
+            {hoursSaving ? 'Guardando...' : 'Guardar cambios'}
+          </button>
         </div>
       </div>
 
