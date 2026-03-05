@@ -6,6 +6,12 @@ export type VerticalLabels = {
 };
 
 export const verticalLabels: Record<string, VerticalLabels> = {
+  barberias: {
+    staff: 'Barbero',
+    staffPlural: 'Barberos',
+    service: 'Servicio',
+    appointment: 'Cita'
+  },
   barberia: {
     staff: 'Barbero',
     staffPlural: 'Barberos',

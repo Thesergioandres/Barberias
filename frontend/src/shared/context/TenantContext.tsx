@@ -10,6 +10,7 @@ export type TenantRecord = {
   verticalSlug?: string;
   planId?: string;
   planName?: string;
+  activeModules?: string[];
   subdomain?: string;
   customColors?: {
     primary?: string;

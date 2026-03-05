@@ -1,6 +1,9 @@
-import { type ChangeEvent, type FormEvent, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { apiRequest } from '../../shared/infrastructure/http/apiClient';
 import { LoadingOverlay } from '../../shared/components/LoadingOverlay';
+import { VERTICALS_REGISTRY } from '../../shared/constants/verticalsRegistry';
+import type { AppModule } from '../../shared/types/appModules';
 
 const initialState = {
   tenantName: '',
@@ -17,11 +20,27 @@ const initialState = {
   branchAddress: ''
 };
 
-export function CreateBarbershopPage() {
+const defaultConfig = {
+  slug: 'general',
+  name: 'tu negocio',
+  activeModules: ['pos', 'inventory'] as AppModule[]
+};
+
+export function CreateTenantPage() {
+  const location = useLocation();
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const verticalConfig = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const vertical = (params.get('vertical') || '').toLowerCase();
+    const match = VERTICALS_REGISTRY.find((item) => item.slug === vertical);
+    return match
+      ? { slug: match.slug, name: match.name, activeModules: match.activeModules }
+      : defaultConfig;
+  }, [location.search]);
 
   const updateField = (field: keyof typeof form) => (event: ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
@@ -39,6 +58,8 @@ export function CreateBarbershopPage() {
           tenantName: form.tenantName,
           slug: form.slug,
           subdomain: form.subdomain,
+          verticalSlug: verticalConfig.slug,
+          activeModules: verticalConfig.activeModules,
           customColors: {
             primary: form.primary,
             secondary: form.secondary
@@ -63,14 +84,17 @@ export function CreateBarbershopPage() {
   return (
     <section className="space-y-6">
       <header className="app-card">
-        <h2 className="section-title">Crear mi barberia</h2>
+        <h2 className="section-title">Crea tu cuenta para {verticalConfig.name}</h2>
         <p className="section-subtitle">Dispara el registro tenant + admin en un solo paso.</p>
       </header>
 
       {success ? (
         <div className="app-card">
-          <p className="text-lg font-semibold">Listo. Tu barberia esta en construccion.</p>
+          <p className="text-lg font-semibold">Listo. Tu cuenta esta en construccion.</p>
           <p className="mt-2 text-sm text-muted">Te enviaremos un correo con el acceso.</p>
+          <Link className="btn-secondary mt-4 inline-flex" to="/waiting">
+            Ver estado de activacion
+          </Link>
         </div>
       ) : (
         <form className="app-card grid gap-4" onSubmit={submit}>
@@ -118,7 +142,12 @@ export function CreateBarbershopPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm">
               Admin telefono
-              <input className="input-field mt-2" value={form.adminPhone} onChange={updateField('adminPhone')} />
+              <input
+                className="input-field mt-2"
+                value={form.adminPhone}
+                onChange={updateField('adminPhone')}
+                required
+              />
             </label>
             <label className="text-sm">
               Admin password
@@ -135,7 +164,7 @@ export function CreateBarbershopPage() {
               <input className="input-field mt-2" value={form.branchAddress} onChange={updateField('branchAddress')} />
             </label>
           </div>
-          <button className="btn-primary" type="submit">Crear barberia</button>
+          <button className="btn-primary" type="submit">Crear cuenta</button>
         </form>
       )}
 

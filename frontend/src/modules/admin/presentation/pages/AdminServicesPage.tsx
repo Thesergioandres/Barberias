@@ -1,6 +1,8 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../../../../shared/infrastructure/http/apiClient';
 import { AdminNav } from '../components/AdminNav';
+import { useTenant } from '../../../../shared/context/TenantContext';
 
 type Service = {
   id: string;
@@ -12,46 +14,84 @@ type Service = {
 };
 
 export function AdminServicesPage() {
-  const [services, setServices] = useState<Service[]>([]);
+  const { tenant } = useTenant();
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', description: '', durationMinutes: 30, price: 10, active: true });
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const emptyForm = useMemo(
+    () => ({ name: '', description: '', durationMinutes: 30, price: 20000, active: true }),
+    []
+  );
+  const [form, setForm] = useState(emptyForm);
 
-  const loadServices = async () => {
-    try {
-      const data = await apiRequest<Service[]>('/services');
-      setServices(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar servicios');
-    }
+  const servicesQuery = useQuery({
+    queryKey: ['services', tenant?.id],
+    queryFn: async () => {
+      if (!tenant?.id) return [] as Service[];
+      return apiRequest<Service[]>(`/services?tenantId=${tenant.id}`);
+    },
+    enabled: Boolean(tenant?.id)
+  });
+
+  const openCreate = () => {
+    setEditingService(null);
+    setForm(emptyForm);
+    setActionError(null);
+    setIsModalOpen(true);
   };
 
-  useEffect(() => {
-    loadServices();
-  }, []);
+  const openEdit = (service: Service) => {
+    setEditingService(service);
+    setForm({
+      name: service.name,
+      description: service.description || '',
+      durationMinutes: service.durationMinutes,
+      price: service.price,
+      active: service.active
+    });
+    setActionError(null);
+    setIsModalOpen(true);
+  };
 
-  const handleCreate = async (event: FormEvent) => {
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingService(null);
+    setActionError(null);
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    setError(null);
+    setActionError(null);
     try {
-      await apiRequest<Service>('/services', {
-        method: 'POST',
-        body: JSON.stringify(form)
-      });
-      setForm({ name: '', description: '', durationMinutes: 30, price: 10, active: true });
-      await loadServices();
+      if (editingService) {
+        await apiRequest<Service>(`/services/${editingService.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(form)
+        });
+      } else {
+        await apiRequest<Service>('/services', {
+          method: 'POST',
+          body: JSON.stringify(form)
+        });
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['services', tenant?.id] });
+      closeModal();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear servicio');
+      setActionError(err instanceof Error ? err.message : 'No se pudo guardar el servicio');
     }
   };
 
-  const updateService = async (id: string, patch: Partial<Service>) => {
+  const toggleService = async (service: Service) => {
     setError(null);
     try {
-      await apiRequest<Service>(`/services/${id}`, {
+      await apiRequest<Service>(`/services/${service.id}`, {
         method: 'PATCH',
-        body: JSON.stringify(patch)
+        body: JSON.stringify({ active: !service.active })
       });
-      await loadServices();
+      await queryClient.invalidateQueries({ queryKey: ['services', tenant?.id] });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo actualizar servicio');
     }
@@ -60,75 +100,29 @@ export function AdminServicesPage() {
   return (
     <section className="space-y-6">
       <header className="app-card">
-        <h2 className="section-title">Servicios</h2>
-        <p className="section-subtitle">Gestiona la oferta de servicios y precios.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="section-title">Servicios</h2>
+            <p className="section-subtitle">Gestiona la oferta de servicios y precios.</p>
+          </div>
+          <button className="btn-primary" type="button" onClick={openCreate}>
+            Nuevo servicio
+          </button>
+        </div>
       </header>
 
       <AdminNav />
 
       {error ? <p className="app-card-soft text-red-200">{error}</p> : null}
 
-      <form className="app-card grid gap-4 md:grid-cols-2" onSubmit={handleCreate}>
-        <label className="text-xs text-zinc-400">
-          Nombre
-          <input
-            className="input-field mt-2"
-            placeholder="Nombre"
-            value={form.name}
-            onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-            required
-          />
-        </label>
-        <label className="text-xs text-zinc-400">
-          Descripcion
-          <input
-            className="input-field mt-2"
-            placeholder="Descripcion"
-            value={form.description}
-            onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-          />
-        </label>
-        <label className="text-xs text-zinc-400">
-          Duracion (min)
-          <input
-            className="input-field mt-2"
-            type="number"
-            min={5}
-            placeholder="Duracion (min)"
-            value={form.durationMinutes}
-            onChange={(event) => setForm((prev) => ({ ...prev, durationMinutes: Number(event.target.value) }))}
-            required
-          />
-        </label>
-        <label className="text-xs text-zinc-400">
-          Precio
-          <input
-            className="input-field mt-2"
-            type="number"
-            min={0}
-            placeholder="Precio"
-            value={form.price}
-            onChange={(event) => setForm((prev) => ({ ...prev, price: Number(event.target.value) }))}
-            required
-          />
-        </label>
-        <label className="flex items-center gap-2 text-xs text-zinc-300">
-          <input
-            type="checkbox"
-            checked={form.active}
-            onChange={(event) => setForm((prev) => ({ ...prev, active: event.target.checked }))}
-          />
-          Activo
-        </label>
-        <div className="flex items-end">
-          <button className="btn-primary" type="submit">
-            Crear servicio
-          </button>
-        </div>
-      </form>
+      {servicesQuery.isLoading ? (
+        <p className="text-sm text-muted">Cargando servicios...</p>
+      ) : servicesQuery.isError ? (
+        <p className="text-sm text-secondary">No se pudieron cargar servicios.</p>
+      ) : null}
 
       <div className="space-y-3">
-        {services.map((service) => (
+        {(servicesQuery.data || []).map((service) => (
           <div key={service.id} className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -138,10 +132,10 @@ export function AdminServicesPage() {
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span>{service.durationMinutes} min</span>
                 <span>$ {service.price}</span>
-                <button
-                  className="btn-ghost"
-                  onClick={() => updateService(service.id, { active: !service.active })}
-                >
+                <button className="btn-ghost" type="button" onClick={() => openEdit(service)}>
+                  Editar
+                </button>
+                <button className="btn-ghost" type="button" onClick={() => toggleService(service)}>
                   {service.active ? 'Desactivar' : 'Activar'}
                 </button>
               </div>
@@ -149,6 +143,84 @@ export function AdminServicesPage() {
           </div>
         ))}
       </div>
+
+      {isModalOpen ? (
+        <div className="overlay-surface fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
+          <form className="app-card w-full max-w-lg space-y-4" onSubmit={handleSubmit}>
+            <div>
+              <h3 className="text-lg font-semibold">
+                {editingService ? 'Editar servicio' : 'Nuevo servicio'}
+              </h3>
+              <p className="text-sm text-muted">Define el nombre, precio y duracion.</p>
+            </div>
+
+            {actionError ? <p className="text-sm text-secondary">{actionError}</p> : null}
+
+            <label className="text-xs text-zinc-400">
+              Nombre
+              <input
+                className="input-field mt-2"
+                placeholder="Nombre"
+                value={form.name}
+                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                required
+              />
+            </label>
+            <label className="text-xs text-zinc-400">
+              Descripcion
+              <input
+                className="input-field mt-2"
+                placeholder="Descripcion"
+                value={form.description}
+                onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+              />
+            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="text-xs text-zinc-400">
+                Duracion (min)
+                <input
+                  className="input-field mt-2"
+                  type="number"
+                  min={5}
+                  placeholder="Duracion (min)"
+                  value={form.durationMinutes}
+                  onChange={(event) => setForm((prev) => ({ ...prev, durationMinutes: Number(event.target.value) }))}
+                  required
+                />
+              </label>
+              <label className="text-xs text-zinc-400">
+                Precio
+                <input
+                  className="input-field mt-2"
+                  type="number"
+                  min={0}
+                  placeholder="Precio"
+                  value={form.price}
+                  onChange={(event) => setForm((prev) => ({ ...prev, price: Number(event.target.value) }))}
+                  required
+                />
+              </label>
+            </div>
+            <label className="flex items-center gap-2 text-xs text-zinc-300">
+              <input
+                type="checkbox"
+                checked={form.active}
+                onChange={(event) => setForm((prev) => ({ ...prev, active: event.target.checked }))}
+              />
+              Activo
+            </label>
+
+            <div className="flex flex-wrap justify-end gap-3">
+              <button className="btn-ghost" type="button" onClick={closeModal}>
+                Cancelar
+              </button>
+              <button className="btn-primary" type="submit">
+                {editingService ? 'Guardar cambios' : 'Crear servicio'}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </section>
   );
 }

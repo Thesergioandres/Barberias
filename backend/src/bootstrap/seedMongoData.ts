@@ -59,6 +59,8 @@ async function ensureTenant(input: {
   planId: string;
   email?: string;
   phone?: string;
+  verticalSlug?: string;
+  activeModules?: string[];
 }) {
   const existing = await TenantModel.findOne({ slug: input.slug });
   if (existing) return existing;
@@ -66,8 +68,8 @@ async function ensureTenant(input: {
     name: input.name,
     slug: input.slug,
     subdomain: input.subdomain,
-    verticalSlug: 'default',
-    activeModules: [],
+    verticalSlug: input.verticalSlug || 'default',
+    activeModules: input.activeModules || [],
     planId: input.planId,
     status: 'active',
     email: input.email || null,
@@ -113,11 +115,29 @@ export async function seedMongoData() {
     phone: '+573000000001'
   });
 
+  const barberTenant = await ensureTenant({
+    name: 'Barberia Demo',
+    slug: 'barberia-demo',
+    subdomain: 'barberia',
+    planId: proPlan._id.toString(),
+    email: 'barberia@factorysaas.com',
+    phone: '+573000000010',
+    verticalSlug: 'barberias',
+    activeModules: ['agenda', 'staff', 'services', 'inventory', 'pos', 'commissions']
+  });
+
   const branch = await ensureBranch({
     tenantId: tenant._id.toString(),
     name: 'Sede Principal',
     address: 'Pendiente',
     phone: '+573000000000'
+  });
+
+  const barberBranch = await ensureBranch({
+    tenantId: barberTenant._id.toString(),
+    name: 'Barberia Central',
+    address: 'Pendiente',
+    phone: '+573000000010'
   });
 
   await ensureUser({
@@ -141,6 +161,18 @@ export async function seedMongoData() {
     approved: true,
     tenantId: tenant._id.toString(),
     branchIds: [branch._id.toString()]
+  });
+
+  const barberAdmin = await ensureUser({
+    name: 'Admin Barberia',
+    email: 'admin@barberia.com',
+    phone: '+573000000010',
+    password: 'barber123',
+    role: 'ADMIN',
+    whatsappConsent: true,
+    approved: true,
+    tenantId: barberTenant._id.toString(),
+    branchIds: [barberBranch._id.toString()]
   });
 
   const staff = await ensureUser({
@@ -188,6 +220,44 @@ export async function seedMongoData() {
     ]);
   }
 
+  const barberServiceCount = await ServiceModel.countDocuments({ tenantId: barberTenant._id.toString() });
+  if (barberServiceCount === 0) {
+    await ServiceModel.insertMany([
+      {
+        tenantId: barberTenant._id.toString(),
+        name: 'Corte Clasico',
+        description: 'Corte tradicional con maquina y tijera.',
+        durationMinutes: 30,
+        price: 20000,
+        active: true
+      },
+      {
+        tenantId: barberTenant._id.toString(),
+        name: 'Arreglo de Barba',
+        description: 'Perfilado y arreglo de barba.',
+        durationMinutes: 20,
+        price: 15000,
+        active: true
+      },
+      {
+        tenantId: barberTenant._id.toString(),
+        name: 'Corte + Barba Premium',
+        description: 'Servicio completo premium.',
+        durationMinutes: 45,
+        price: 30000,
+        active: true
+      },
+      {
+        tenantId: barberTenant._id.toString(),
+        name: 'Perfilado de Cejas',
+        description: 'Detalle rapido de cejas.',
+        durationMinutes: 10,
+        price: 5000,
+        active: true
+      }
+    ]);
+  }
+
   const appointmentCount = await AppointmentModel.countDocuments({ tenantId: tenant._id.toString() });
   if (appointmentCount === 0) {
     const firstService = await ServiceModel.findOne({ tenantId: tenant._id.toString() });
@@ -209,5 +279,5 @@ export async function seedMongoData() {
     }
   }
 
-  return { admin, staff, client, tenant, branch, trialPlan, proPlan };
+  return { admin, staff, client, tenant, branch, barberTenant, barberBranch, barberAdmin, trialPlan, proPlan };
 }

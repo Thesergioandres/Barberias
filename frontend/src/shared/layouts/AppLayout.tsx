@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTenant } from '../context/TenantContext';
 import { BrandMark } from '../components/BrandMark';
+import { moduleRegistry } from '../constants/moduleRegistry';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `app-navlink ${isActive ? 'border-secondary/60 text-secondary' : ''}`;
@@ -9,6 +10,15 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 export function AppLayout() {
   const { user, logout } = useAuth();
   const { tenant } = useTenant();
+  const activeModules = tenant?.activeModules || [];
+  const isGod = user?.role === 'GOD';
+
+  const adminModules = Object.values(moduleRegistry).filter(
+    (module) => module.adminPath && (isGod || activeModules.includes(module.key))
+  );
+  const staffModules = Object.values(moduleRegistry).filter(
+    (module) => module.staffPath && (isGod || activeModules.includes(module.key))
+  );
 
   return (
     <div className="app-shell">
@@ -40,33 +50,30 @@ export function AppLayout() {
 
       <div className="app-container">
         <nav className="mt-6 flex flex-wrap gap-2">
-          <NavLink className={navLinkClass} to="/admin">
-            Dashboard
-          </NavLink>
-          <NavLink className={navLinkClass} to="/admin/agenda">
-            Agenda viva
-          </NavLink>
-          <NavLink className={navLinkClass} to="/admin/team">
-            Equipo
-          </NavLink>
-          <NavLink className={navLinkClass} to="/admin/branches">
-            Sedes
-          </NavLink>
-          <NavLink className={navLinkClass} to="/admin/whatsapp">
-            WhatsApp
-          </NavLink>
-            <NavLink className={navLinkClass} to="/admin/inventory">
-              Inventario
+          {user?.role === 'ADMIN' || user?.role === 'GOD' ? (
+            <NavLink className={navLinkClass} to="/admin">
+              Dashboard
             </NavLink>
-            <NavLink className={navLinkClass} to="/admin/reports">
-              Cierre diario
+          ) : null}
+          {(user?.role === 'ADMIN' || user?.role === 'GOD')
+            ? adminModules.map((module) => (
+                <NavLink key={module.key} className={navLinkClass} to={module.adminPath as string}>
+                  {module.label}
+                </NavLink>
+              ))
+            : null}
+          {user?.role === 'STAFF'
+            ? staffModules.map((module) => (
+                <NavLink key={module.key} className={navLinkClass} to={module.staffPath as string}>
+                  {module.staffLabel || module.label}
+                </NavLink>
+              ))
+            : null}
+          {user?.role === 'GOD' ? (
+            <NavLink className={navLinkClass} to="/god">
+              God Panel
             </NavLink>
-          <NavLink className={navLinkClass} to="/staff">
-            Staff
-          </NavLink>
-          <NavLink className={navLinkClass} to="/god">
-            God Panel
-          </NavLink>
+          ) : null}
         </nav>
       </div>
 

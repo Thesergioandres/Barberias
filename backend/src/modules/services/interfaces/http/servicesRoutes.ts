@@ -17,6 +17,14 @@ export function createServicesRoutes({
 }) {
   const router = Router();
 
+  router.get('/public', async (req: Request, res: Response) => {
+    const tenantId = typeof req.query.tenantId === 'string' ? req.query.tenantId : '';
+    if (!tenantId) return res.status(400).json({ message: 'tenantId is required' });
+
+    const services = await servicesRepository.list(tenantId, { onlyActive: true });
+    res.json(services);
+  });
+
   router.get('/', async (req: Request, res: Response) => {
     const onlyActive = req.query.onlyActive === 'true';
     const tenantId = typeof req.query.tenantId === 'string' ? req.query.tenantId : '';
