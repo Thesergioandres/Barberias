@@ -8,12 +8,15 @@ type TenantDocument = {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  email?: string | null;
+  phone?: string | null;
   customColors?: {
     primary?: string;
     secondary?: string;
   };
   logoUrl?: string | null;
   status: TenantStatus;
+  validUntil?: Date | null;
   config: {
     bufferTimeMinutes: number;
     requirePaymentForNoShows: boolean;
@@ -40,6 +43,8 @@ const tenantSchema = new mongoose.Schema<TenantDocument>(
     subdomain: { type: String, required: true, unique: true, index: true },
     verticalSlug: { type: String, required: true, index: true },
     activeModules: { type: [String], default: [] },
+    email: { type: String, default: null },
+    phone: { type: String, default: null },
     customColors: {
       primary: { type: String, default: '#f59e0b' },
       secondary: { type: String, default: '#facc15' }
@@ -51,6 +56,7 @@ const tenantSchema = new mongoose.Schema<TenantDocument>(
       default: TenantStatus.TRIAL,
       index: true
     },
+    validUntil: { type: Date, default: null },
     config: {
       bufferTimeMinutes: { type: Number, default: 10 },
       requirePaymentForNoShows: { type: Boolean, default: false },

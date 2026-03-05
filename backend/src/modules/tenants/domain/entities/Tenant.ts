@@ -6,6 +6,8 @@ type TenantProps = {
   slug: string;
   planId: string;
   planName?: string;
+  email?: string | null;
+  phone?: string | null;
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
@@ -15,6 +17,7 @@ type TenantProps = {
   };
   logoUrl?: string | null;
   status: TenantStatus;
+  validUntil?: string | null;
   config?: {
     bufferTimeMinutes?: number;
     requirePaymentForNoShows?: boolean;
@@ -40,6 +43,8 @@ export class Tenant {
   slug: string;
   planId: string;
   planName?: string;
+  email?: string | null;
+  phone?: string | null;
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
@@ -49,6 +54,7 @@ export class Tenant {
   };
   logoUrl?: string | null;
   status: TenantStatus;
+  validUntil?: string | null;
   config: {
     bufferTimeMinutes: number;
     requirePaymentForNoShows: boolean;
@@ -71,12 +77,15 @@ export class Tenant {
     this.slug = props.slug;
     this.planId = props.planId;
     this.planName = props.planName;
+    this.email = props.email ?? null;
+    this.phone = props.phone ?? null;
     this.subdomain = props.subdomain;
     this.verticalSlug = props.verticalSlug;
     this.activeModules = props.activeModules;
     this.customColors = props.customColors;
     this.logoUrl = props.logoUrl ?? null;
     this.status = props.status;
+    this.validUntil = props.validUntil ?? null;
     this.config = {
       bufferTimeMinutes: props.config?.bufferTimeMinutes ?? 10,
       requirePaymentForNoShows: props.config?.requirePaymentForNoShows ?? false,

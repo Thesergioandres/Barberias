@@ -42,6 +42,10 @@ type Tenant = {
   planId: string;
   planName?: string;
   status: string;
+  email?: string | null;
+  phone?: string | null;
+  validUntil?: string | null;
+  createdAt: string;
   customColors?: {
     primary?: string;
     secondary?: string;
@@ -174,6 +178,10 @@ export const database: {
       planId: 'plan_pro',
       planName: 'Pro',
       status: 'active',
+      email: 'admin@factorysaas.com',
+      phone: '+573000000001',
+      validUntil: null,
+      createdAt: new Date().toISOString(),
       customColors: {
         primary: '#f59e0b',
         secondary: '#fde68a'

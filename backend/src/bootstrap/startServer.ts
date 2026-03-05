@@ -42,11 +42,13 @@ export async function startServer({ env, logger }: { env: Env; logger: Logger })
         require('../jobs/whatsappQueue.js');
       }
       require('../jobs/appointmentReminders.js');
+       require('../jobs/tenantSuspension.js');
     } else {
       if (env.whatsappProvider === 'bullmq') {
         await import('../jobs/whatsappQueue.js');
       }
       await import('../jobs/appointmentReminders.js');
+       await import('../jobs/tenantSuspension.js');
     }
   }
 

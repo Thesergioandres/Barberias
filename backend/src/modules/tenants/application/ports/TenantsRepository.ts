@@ -8,11 +8,15 @@ export interface TenantEntity {
   status: string;
   planId: string;
   planName?: string;
+  email?: string | null;
+  phone?: string | null;
   customColors?: {
     primary?: string;
     secondary?: string;
   };
   logoUrl?: string | null;
+  validUntil?: string | null;
+  createdAt?: string;
   config: {
     bufferTimeMinutes: number;
     requirePaymentForNoShows: boolean;

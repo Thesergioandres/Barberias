@@ -83,7 +83,11 @@ export class FactoryService {
       activeModules: Array.isArray(input.activeModules) ? [...input.activeModules] : [],
       planId: plan.id,
       planName: plan.name,
-      status: 'trial',
+      status: 'onboarding',
+      email: adminEmail,
+      phone: adminPhone,
+      validUntil: null,
+      createdAt: new Date().toISOString(),
       customColors: input.customColors || DEFAULT_COLORS,
       logoUrl: input.logoUrl ?? null,
       config: this.deps.defaultConfig

@@ -57,6 +57,8 @@ async function ensureTenant(input: {
   slug: string;
   subdomain: string;
   planId: string;
+  email?: string;
+  phone?: string;
 }) {
   const existing = await TenantModel.findOne({ slug: input.slug });
   if (existing) return existing;
@@ -67,7 +69,9 @@ async function ensureTenant(input: {
     verticalSlug: 'default',
     activeModules: [],
     planId: input.planId,
-    status: 'active'
+    status: 'active',
+    email: input.email || null,
+    phone: input.phone || null
   });
 }
 
@@ -104,7 +108,9 @@ export async function seedMongoData() {
     name: 'Essence Factory',
     slug: 'essence',
     subdomain: 'essence',
-    planId: proPlan._id.toString()
+    planId: proPlan._id.toString(),
+    email: 'admin@factorysaas.com',
+    phone: '+573000000001'
   });
 
   const branch = await ensureBranch({

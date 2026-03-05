@@ -11,9 +11,13 @@ function mapTenant(document: {
   activeModules: string[];
   planId: string;
   status: string;
+  validUntil?: Date | null;
+  email?: string | null;
+  phone?: string | null;
   customColors?: { primary?: string; secondary?: string };
   logoUrl?: string | null;
   config: TenantEntity['config'];
+  createdAt?: Date;
 } | null, planName?: string): TenantEntity | null {
   if (!document) return null;
 
@@ -27,9 +31,13 @@ function mapTenant(document: {
     planId: document.planId,
     planName,
     status: document.status,
+    validUntil: document.validUntil ? new Date(document.validUntil).toISOString() : null,
+    email: document.email ?? null,
+    phone: document.phone ?? null,
     customColors: document.customColors,
     logoUrl: document.logoUrl ?? null,
-    config: document.config
+    config: document.config,
+    createdAt: document.createdAt ? new Date(document.createdAt).toISOString() : undefined
   };
 }
 

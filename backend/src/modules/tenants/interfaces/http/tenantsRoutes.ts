@@ -2,9 +2,11 @@ import { Router, type Request, type Response } from 'express';
 import mongoose from 'mongoose';
 import { database } from '../../../../shared/infrastructure/memory/database';
 import { WhatsAppLogModel } from '../../../../shared/infrastructure/mongoose/models/WhatsAppLogModel';
+import { suspendExpiredTenants } from '../../../../jobs/tenantSuspension';
 import type { TenantsRepository } from '../../application/ports/TenantsRepository';
 import type { authenticateJwt } from '../../../../shared/interfaces/http/middlewares/authenticateJwt';
 import type { requireRoles } from '../../../../shared/interfaces/http/middlewares/requireRoles';
+import { TenantStatus } from '../../domain/enums/TenantEnums';
 
 export function createTenantsRoutes(deps: { 
   tenantsRepository: TenantsRepository;
@@ -26,6 +28,11 @@ export function createTenantsRoutes(deps: {
     }, {});
 
     return res.json({ total: tenants.length, byStatus });
+  });
+
+  router.post('/trigger-suspensions', deps.authenticateJwt, deps.requireRoles('GOD'), async (_req: Request, res: Response) => {
+    await suspendExpiredTenants();
+    return res.json({ message: 'Job de suspensión ejecutado manualmente' });
   });
 
   router.get('/usage/whatsapp', deps.authenticateJwt, deps.requireRoles('GOD'), async (_req: Request, res: Response) => {
@@ -63,6 +70,9 @@ export function createTenantsRoutes(deps: {
       name: tenant.name,
       slug: tenant.slug,
       subdomain: tenant.subdomain,
+      email: tenant.email,
+      phone: tenant.phone,
+      createdAt: tenant.createdAt,
       verticalSlug: tenant.verticalSlug,
       activeModules: tenant.activeModules,
       customColors: tenant.customColors,
@@ -77,6 +87,31 @@ export function createTenantsRoutes(deps: {
       return res.status(404).json({ message: 'Tenant no encontrado' });
     }
     return res.json(tenant);
+  });
+
+  router.patch('/:id/activate', deps.authenticateJwt, deps.requireRoles('GOD'), async (req: Request, res: Response) => {
+    const { planId, validUntil } = req.body as { planId?: string; validUntil?: string };
+
+    if (!planId || !validUntil) {
+      return res.status(400).json({ message: 'planId y validUntil son requeridos' });
+    }
+
+    const parsedValidUntil = new Date(validUntil);
+    if (Number.isNaN(parsedValidUntil.getTime())) {
+      return res.status(400).json({ message: 'validUntil debe ser una fecha valida' });
+    }
+
+    const updated = await deps.tenantsRepository.update(req.params.id, {
+      planId,
+      status: TenantStatus.ACTIVE,
+      validUntil: parsedValidUntil.toISOString()
+    });
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Tenant no encontrado' });
+    }
+
+    return res.json(updated);
   });
 
   return router;
