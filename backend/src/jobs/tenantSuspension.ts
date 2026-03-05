@@ -5,9 +5,6 @@ import { TenantModel } from '../shared/infrastructure/mongoose/models/TenantMode
 import { database } from '../shared/infrastructure/memory/database';
 import { TenantStatus } from '../modules/tenants/domain/enums/TenantEnums';
 
-const connection = redisConnectionOptions;
-export const tenantSuspensionQueue = new Queue('tenant-suspensions', { connection });
-
 const JOB_NAME = 'suspend-expired-tenants';
 
 export async function suspendExpiredTenants() {
@@ -29,26 +26,31 @@ export async function suspendExpiredTenants() {
   });
 }
 
-const worker = new Worker(
-  'tenant-suspensions',
-  async (_job: Job) => {
-    await suspendExpiredTenants();
-  },
-  { connection }
-);
+export function initTenantSuspensionJobs() {
+  const connection = redisConnectionOptions;
+  const tenantSuspensionQueue = new Queue('tenant-suspensions', { connection });
 
-worker.on('failed', (job, err) => {
-  console.error('Tenant suspension worker failed:', job?.id, err.message);
-});
+  const worker = new Worker(
+    'tenant-suspensions',
+    async (_job: Job) => {
+      await suspendExpiredTenants();
+    },
+    { connection }
+  );
 
-async function ensureRepeatableJob() {
-  const existing = await tenantSuspensionQueue.getRepeatableJobs();
-  const alreadyScheduled = existing.some((item) => item.name === JOB_NAME);
-  if (!alreadyScheduled) {
-    await tenantSuspensionQueue.add(JOB_NAME, {}, { repeat: { cron: '0 0 * * *' } });
-  }
+  worker.on('failed', (job, err) => {
+    console.error('Tenant suspension worker failed:', job?.id, err.message);
+  });
+
+  const ensureRepeatableJob = async () => {
+    const existing = await tenantSuspensionQueue.getRepeatableJobs();
+    const alreadyScheduled = existing.some((item) => item.name === JOB_NAME);
+    if (!alreadyScheduled) {
+      await tenantSuspensionQueue.add(JOB_NAME, {}, { repeat: { pattern: '0 0 * * *' } });
+    }
+  };
+
+  ensureRepeatableJob().catch((err: Error) => {
+    console.error('Failed to schedule tenant suspension job:', err.message);
+  });
 }
-
-ensureRepeatableJob().catch((err: Error) => {
-  console.error('Failed to schedule tenant suspension job:', err.message);
-});

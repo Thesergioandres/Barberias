@@ -31,9 +31,15 @@ export class InMemoryTenantsRepository implements TenantsRepository {
   }
 
   async create(input: CreateTenantInput) {
-    const tenant: TenantEntity = { id: randomUUID(), ...input };
-    database.tenants.push(tenant);
-    return mapTenant(tenant);
+    const createdAt = input.createdAt ?? new Date().toISOString();
+    const tenant: TenantEntity = {
+      id: randomUUID(),
+      ...input,
+      createdAt
+    };
+    const record = { ...tenant, createdAt } as (typeof database.tenants)[number];
+    database.tenants.push(record);
+    return mapTenant(record);
   }
 
   async update(id: string, input: UpdateTenantInput) {

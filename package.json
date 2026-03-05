@@ -10,13 +10,18 @@
     "node": ">=18"
   },
   "scripts": {
-    "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
-    "dev:backend": "npm run dev -w backend",
+    "dev": "concurrently --kill-others-on-fail \"npm run dev:services\" \"npm run dev:backend:docker\" \"npm run dev:frontend\"",
+    "dev:services": "docker compose up -d redis mongo",
+    "dev:docker": "concurrently -k \"npm run dev:services\" \"npm run dev:backend:docker\" \"npm run dev:frontend\"",
+    "dev:backend:docker": "cross-env USE_MONGO=true ENABLE_JOBS=true npm run dev -w backend",
+    "dev:backend:memory": "cross-env USE_MONGO=false ENABLE_JOBS=false npm run dev -w backend",
+    "dev:backend": "cross-env USE_MONGO=false ENABLE_JOBS=false npm run dev -w backend",
     "dev:frontend": "npm run dev -w frontend",
     "build": "npm run build -w backend && npm run build -w frontend",
     "start": "npm run start -w backend"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3"
   }
 }

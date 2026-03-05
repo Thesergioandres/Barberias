@@ -114,5 +114,27 @@ export function createTenantsRoutes(deps: {
     return res.json(updated);
   });
 
+  router.patch('/:id/logo', deps.authenticateJwt, deps.requireRoles('ADMIN'), async (req: Request, res: Response) => {
+    const requester = req.auth;
+    if (!requester) {
+      return res.status(403).json({ message: 'No autorizado' });
+    }
+    if (requester.role !== 'GOD' && requester.tenantId !== req.params.id) {
+      return res.status(403).json({ message: 'No autorizado para este tenant' });
+    }
+
+    const { logoUrl } = req.body as { logoUrl?: string };
+    if (!logoUrl) {
+      return res.status(400).json({ message: 'logoUrl es requerido' });
+    }
+
+    const updated = await deps.tenantsRepository.update(req.params.id, { logoUrl });
+    if (!updated) {
+      return res.status(404).json({ message: 'Tenant no encontrado' });
+    }
+
+    return res.json(updated);
+  });
+
   return router;
 }

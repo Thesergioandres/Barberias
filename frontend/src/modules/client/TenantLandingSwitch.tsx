@@ -1,6 +1,8 @@
-import { BookingEnginePage } from './BookingEnginePage';
-import { StorefrontPage } from './StorefrontPage';
-import { useTenant } from '../../shared/context/TenantContext';
+import { TenantPublicHome } from './TenantPublicHome';
+import { CartProvider, useCart } from '../../shared/context/CartContext';
+import { CartDrawer } from './components/CartDrawer';
+import { CartToast } from './components/CartToast';
+import { useTenant, type TenantRecord } from '../../shared/context/TenantContext';
 
 export function TenantLandingSwitch() {
   const { tenant, loading } = useTenant();
@@ -9,21 +11,25 @@ export function TenantLandingSwitch() {
     return <div className="app-card">Cargando experiencia...</div>;
   }
 
-  const activeModules = tenant?.activeModules || [];
-  const hasStorefront = activeModules.includes('ecommerce_storefront');
-  const hasAgenda = activeModules.includes('agenda');
+  return (
+    <CartProvider tenantId={tenant?.id}>
+      <TenantShell tenant={tenant} />
+    </CartProvider>
+  );
+}
 
-  if (hasStorefront && !hasAgenda) {
-    return <StorefrontPage />;
-  }
+function TenantShell({ tenant }: { tenant: TenantRecord | null }) {
+  const { isCartOpen, setIsCartOpen } = useCart();
 
-  if (hasStorefront && hasAgenda) {
-    return <StorefrontPage />;
-  }
-
-  if (hasAgenda) {
-    return <BookingEnginePage />;
-  }
-
-  return <BookingEnginePage />;
+  return (
+    <>
+      <TenantPublicHome tenant={tenant} />
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        tenantPhone={tenant?.phone}
+      />
+      <CartToast />
+    </>
+  );
 }

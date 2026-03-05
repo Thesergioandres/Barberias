@@ -17,6 +17,7 @@ import { TenantLandingSwitch } from '../modules/client/TenantLandingSwitch';
 import { LandingPage } from '../modules/landing/LandingPage';
 import { BarberiasLandingPage } from '../modules/landing/BarberiasLandingPage';
 import { BarberiasClientLoginPage } from '../modules/landing/BarberiasClientLoginPage';
+import { VerticalLandingPage } from '../modules/landing/VerticalLandingPage';
 import { BarbershopLandingPage } from '../modules/landing/presentation/pages/BarbershopLandingPage';
 import { AdminHomePage } from '../modules/admin/pages/AdminHomePage';
 import { GodPanelPage } from '../modules/god/GodPanelPage';
@@ -150,6 +151,7 @@ export function AppRouter() {
     const landingRoutes = createRoutesFromElements(
       <Route element={<LandingLayout />}>
         <Route index element={<LandingPage />} />
+        <Route path="/landing/:slug" element={<VerticalLandingPage />} />
         <Route path="/barberias" element={<BarbershopLandingPage />} />
         <Route path="/barberias-landing" element={<BarberiasLandingPage />} />
         <Route path="/waiting" element={<WaitingApprovalPage />} />

@@ -1,4 +1,3 @@
-import { BullmqWhatsAppProvider } from './infrastructure/providers/BullmqWhatsAppProvider';
 import { ConsoleWhatsAppProvider } from './infrastructure/providers/ConsoleWhatsAppProvider';
 import { NotificationsService } from './application/NotificationsService';
 import { createNotificationsRoutes } from './interfaces/http/notificationsRoutes';
@@ -19,7 +18,7 @@ export function createNotificationsModule({
   tenantsRepository: TenantsRepository;
 }) {
   const provider = env?.whatsappProvider === 'bullmq'
-    ? new BullmqWhatsAppProvider()
+    ? new (require('./infrastructure/providers/BullmqWhatsAppProvider').BullmqWhatsAppProvider)()
     : new ConsoleWhatsAppProvider();
   const notificationsService = new NotificationsService(provider, tenantsRepository);
   const notificationsRoutes = createNotificationsRoutes({

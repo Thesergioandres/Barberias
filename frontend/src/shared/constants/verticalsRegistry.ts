@@ -21,7 +21,16 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'barberias',
     name: 'Barberias',
-    activeModules: ['agenda', 'staff', 'services', 'inventory', 'pos', 'commissions'],
+    activeModules: [
+      'agenda',
+      'staff',
+      'services',
+      'inventory',
+      'pos',
+      'commissions',
+      'subscriptions',
+      'progress_tracking'
+    ],
     theme: {
       background: '#1E1E1E',
       text: '#F5F5F5',
@@ -33,31 +42,75 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'salones-belleza',
     name: 'Salones de belleza',
-    activeModules: ['agenda', 'staff', 'services', 'inventory', 'pos', 'commissions'],
+    activeModules: [
+      'agenda',
+      'staff',
+      'services',
+      'inventory',
+      'pos',
+      'commissions',
+      'subscriptions',
+      'progress_tracking'
+    ],
     labels: { staff: 'Estilista', service: 'Servicio' }
   },
   {
     slug: 'estetica-avanzada',
     name: 'Centros de estetica avanzada',
-    activeModules: ['agenda', 'staff', 'services', 'inventory', 'pos', 'commissions'],
+    activeModules: [
+      'agenda',
+      'staff',
+      'services',
+      'inventory',
+      'pos',
+      'commissions',
+      'subscriptions',
+      'progress_tracking'
+    ],
     labels: { staff: 'Especialista', service: 'Tratamiento' }
   },
   {
     slug: 'spas-relajacion',
     name: 'Spas y centros de relajacion',
-    activeModules: ['agenda', 'staff', 'services', 'inventory', 'pos', 'subscriptions'],
+    activeModules: [
+      'agenda',
+      'staff',
+      'services',
+      'inventory',
+      'pos',
+      'subscriptions',
+      'commissions',
+      'progress_tracking'
+    ],
     labels: { staff: 'Terapeuta', service: 'Sesion' }
   },
   {
     slug: 'depilacion-laser',
     name: 'Centros de depilacion laser',
-    activeModules: ['agenda', 'staff', 'services', 'inventory', 'pos'],
+    activeModules: [
+      'agenda',
+      'staff',
+      'services',
+      'inventory',
+      'pos',
+      'commissions',
+      'subscriptions',
+      'progress_tracking'
+    ],
     labels: { staff: 'Especialista', service: 'Tratamiento' }
   },
   {
     slug: 'restaurantes',
     name: 'Restaurantes',
-    activeModules: ['tables', 'pos', 'inventory', 'kitchen_display', 'digital_menu', 'staff'],
+    activeModules: [
+      'tables',
+      'pos',
+      'inventory',
+      'kitchen_display',
+      'digital_menu',
+      'staff',
+      'ecommerce_storefront'
+    ],
     theme: {
       background: '#2A1B12',
       text: '#FFF4E6',
@@ -69,7 +122,15 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'discotecas-bares',
     name: 'Discotecas y bares nocturnos',
-    activeModules: ['tables', 'pos', 'inventory', 'staff'],
+    activeModules: [
+      'tables',
+      'pos',
+      'inventory',
+      'staff',
+      'kitchen_display',
+      'digital_menu',
+      'ecommerce_storefront'
+    ],
     labels: { staff: 'Bartender', service: 'Consumo' }
   },
   {
@@ -87,7 +148,16 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'veterinarias',
     name: 'Veterinarias',
-    activeModules: ['agenda', 'staff', 'services', 'inventory', 'pos'],
+    activeModules: [
+      'agenda',
+      'staff',
+      'services',
+      'inventory',
+      'pos',
+      'commissions',
+      'subscriptions',
+      'progress_tracking'
+    ],
     labels: { staff: 'Veterinario', service: 'Consulta' }
   },
   {
@@ -99,7 +169,13 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'farmacias',
     name: 'Farmacias',
-    activeModules: ['inventory', 'pos', 'accounting'],
+    activeModules: [
+      'inventory',
+      'pos',
+      'accounting',
+      'order_management',
+      'shipping_tracking'
+    ],
     labels: { staff: 'Farmaceutico', service: 'Producto' }
   },
   {
@@ -111,7 +187,16 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'clinicas',
     name: 'Clinicas',
-    activeModules: ['agenda', 'staff', 'services', 'inventory', 'pos'],
+    activeModules: [
+      'agenda',
+      'staff',
+      'services',
+      'inventory',
+      'pos',
+      'commissions',
+      'subscriptions',
+      'progress_tracking'
+    ],
     theme: {
       background: '#F7FAFF',
       text: '#0B1E3B',
@@ -123,13 +208,30 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'clinicas-odontologia',
     name: 'Clinicas de odontologia',
-    activeModules: ['agenda', 'staff', 'services', 'inventory', 'pos'],
+    activeModules: [
+      'agenda',
+      'staff',
+      'services',
+      'inventory',
+      'pos',
+      'commissions',
+      'subscriptions',
+      'progress_tracking'
+    ],
     labels: { staff: 'Odontologo', service: 'Tratamiento' }
   },
   {
     slug: 'psicologia',
     name: 'Consultorios de psicologia',
-    activeModules: ['agenda', 'staff', 'services', 'subscriptions'],
+    activeModules: [
+      'agenda',
+      'staff',
+      'services',
+      'subscriptions',
+      'commissions',
+      'inventory',
+      'progress_tracking'
+    ],
     labels: { staff: 'Psicologo', service: 'Sesion' }
   },
   {
@@ -147,13 +249,25 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'tiendas-ropa-calzado',
     name: 'Tiendas de ropa y calzado',
-    activeModules: ['inventory', 'pos', 'accounting'],
+    activeModules: [
+      'inventory',
+      'pos',
+      'accounting',
+      'order_management',
+      'shipping_tracking'
+    ],
     labels: { staff: 'Vendedor', service: 'Producto' }
   },
   {
     slug: 'ferreterias',
     name: 'Ferreterias',
-    activeModules: ['inventory', 'pos', 'accounting'],
+    activeModules: [
+      'inventory',
+      'pos',
+      'accounting',
+      'order_management',
+      'shipping_tracking'
+    ],
     labels: { staff: 'Asesor', service: 'Producto' }
   },
   {
@@ -183,7 +297,7 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'academias-idiomas',
     name: 'Academias de idiomas',
-    activeModules: ['subscriptions', 'progress_tracking', 'staff', 'tasks'],
+    activeModules: ['subscriptions', 'progress_tracking', 'staff', 'tasks', 'access_control'],
     labels: { staff: 'Instructor', service: 'Curso' }
   },
   {
@@ -201,7 +315,7 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'tutorias',
     name: 'Tutorias y clases particulares',
-    activeModules: ['agenda', 'staff', 'subscriptions', 'progress_tracking'],
+    activeModules: ['agenda', 'staff', 'subscriptions', 'progress_tracking', 'access_control', 'tasks'],
     labels: { staff: 'Tutor', service: 'Sesion' }
   },
   {
@@ -213,7 +327,7 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'gimnasios',
     name: 'Gimnasios',
-    activeModules: ['subscriptions', 'progress_tracking', 'staff', 'access_control'],
+    activeModules: ['subscriptions', 'progress_tracking', 'staff', 'access_control', 'tasks'],
     labels: { staff: 'Coach', service: 'Rutina' }
   },
   {
@@ -249,13 +363,13 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'despachos-abogados',
     name: 'Despachos de abogados',
-    activeModules: ['contracts', 'projects', 'tasks', 'staff', 'accounting'],
+    activeModules: ['contracts', 'projects', 'tasks', 'staff', 'accounting', 'assets_management'],
     labels: { staff: 'Abogado', service: 'Asesoria' }
   },
   {
     slug: 'estudios-contables',
     name: 'Estudios contables',
-    activeModules: ['accounting', 'projects', 'tasks', 'staff'],
+    activeModules: ['accounting', 'projects', 'tasks', 'staff', 'assets_management', 'contracts'],
     labels: { staff: 'Contador', service: 'Servicio' }
   },
   {
@@ -279,7 +393,7 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'arquitectos-ingenieros',
     name: 'Arquitectos e ingenieros',
-    activeModules: ['projects', 'tasks', 'staff', 'assets_management', 'contracts'],
+    activeModules: ['projects', 'tasks', 'staff', 'assets_management', 'contracts', 'accounting'],
     labels: { staff: 'Profesional', service: 'Proyecto' }
   },
   {
@@ -303,7 +417,7 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'agencias-marketing',
     name: 'Agencias de marketing',
-    activeModules: ['projects', 'tasks', 'staff', 'assets_management'],
+    activeModules: ['projects', 'tasks', 'staff', 'assets_management', 'accounting', 'contracts'],
     labels: { staff: 'Especialista', service: 'Campana' }
   },
   {
@@ -321,13 +435,21 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'mudanzas-fletes',
     name: 'Mudanzas y fletes',
-    activeModules: ['projects', 'tasks', 'staff', 'assets_management', 'inventory'],
+    activeModules: [
+      'projects',
+      'tasks',
+      'staff',
+      'assets_management',
+      'inventory',
+      'contracts',
+      'shipping_tracking'
+    ],
     labels: { staff: 'Operador', service: 'Servicio' }
   },
   {
     slug: 'mensajeria-ultima-milla',
     name: 'Mensajeria y ultima milla',
-    activeModules: ['projects', 'tasks', 'staff', 'assets_management'],
+    activeModules: ['projects', 'tasks', 'staff', 'assets_management', 'contracts', 'shipping_tracking'],
     labels: { staff: 'Mensajero', service: 'Envio' }
   },
   {
@@ -339,7 +461,7 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'alquiler-vehiculos',
     name: 'Alquiler de vehiculos',
-    activeModules: ['assets_management', 'contracts', 'pos', 'inventory', 'staff'],
+    activeModules: ['assets_management', 'contracts', 'pos', 'inventory', 'staff', 'shipping_tracking'],
     labels: { staff: 'Agente', service: 'Reserva' }
   },
   {
@@ -351,13 +473,21 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'alquiler-mobiliario-sonido',
     name: 'Alquiler de mobiliario y sonido',
-    activeModules: ['inventory', 'pos', 'contracts', 'staff'],
+    activeModules: ['inventory', 'pos', 'contracts', 'staff', 'assets_management', 'shipping_tracking'],
     labels: { staff: 'Tecnico', service: 'Alquiler' }
   },
   {
     slug: 'teatros-cines',
     name: 'Teatros y cines independientes',
-    activeModules: ['pos', 'inventory', 'staff', 'access_control'],
+    activeModules: [
+      'pos',
+      'inventory',
+      'staff',
+      'access_control',
+      'kitchen_display',
+      'digital_menu',
+      'ecommerce_storefront'
+    ],
     labels: { staff: 'Taquillero', service: 'Funcion' }
   },
   {
@@ -417,7 +547,16 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
   {
     slug: 'marketplace',
     name: 'Marketplace Multi-Vendedor',
-    activeModules: ['ecommerce_storefront', 'shopping_cart', 'order_management', 'inventory', 'shipping_tracking', 'multi_vendor', 'commissions'],
+    activeModules: [
+      'ecommerce_storefront',
+      'shopping_cart',
+      'order_management',
+      'inventory',
+      'shipping_tracking',
+      'multi_vendor',
+      'commissions',
+      'accounting'
+    ],
     labels: { staff: 'Vendedor/Tienda', service: 'Publicacion', category: 'Departamento' }
   }
 ];

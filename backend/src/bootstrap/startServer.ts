@@ -39,16 +39,18 @@ export async function startServer({ env, logger }: { env: Env; logger: Logger })
     const isTsNodeDev = Boolean(process.env.TS_NODE_DEV);
     if (isTsNodeDev) {
       if (env.whatsappProvider === 'bullmq') {
-        require('../jobs/whatsappQueue.js');
+        require('../jobs/whatsappQueue');
       }
-      require('../jobs/appointmentReminders.js');
-       require('../jobs/tenantSuspension.js');
+      require('../jobs/appointmentReminders');
+      const { initTenantSuspensionJobs } = require('../jobs/tenantSuspension');
+      initTenantSuspensionJobs();
     } else {
       if (env.whatsappProvider === 'bullmq') {
         await import('../jobs/whatsappQueue.js');
       }
       await import('../jobs/appointmentReminders.js');
-       await import('../jobs/tenantSuspension.js');
+      const { initTenantSuspensionJobs } = await import('../jobs/tenantSuspension.js');
+      initTenantSuspensionJobs();
     }
   }
 

@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '../../shared/infrastructure/http/apiClient';
 import { useTenant } from '../../shared/context/TenantContext';
+import { useCart } from '../../shared/context/CartContext';
 
 type Product = {
   id: string;
@@ -29,11 +30,51 @@ export function StorefrontPage() {
   const products = useMemo(() => productsQuery.data || [], [productsQuery.data]);
 
   return (
+    <StorefrontContent
+      products={products}
+      tenantName={tenant?.name}
+      showCrossNav={showCrossNav}
+      isLoading={productsQuery.isLoading}
+      isError={productsQuery.isError}
+    />
+  );
+}
+
+type StorefrontContentProps = {
+  products: Product[];
+  tenantName?: string | null;
+  showCrossNav: boolean;
+  isLoading: boolean;
+  isError: boolean;
+};
+
+function StorefrontContent({
+  products,
+  tenantName,
+  showCrossNav,
+  isLoading,
+  isError
+}: StorefrontContentProps) {
+  const { addItem, totalItems, setIsCartOpen } = useCart();
+  const [isBouncing, setIsBouncing] = useState(false);
+  const prevItemsRef = useRef(totalItems);
+
+  useEffect(() => {
+    if (prevItemsRef.current !== totalItems) {
+      setIsBouncing(true);
+      const timer = window.setTimeout(() => setIsBouncing(false), 600);
+      prevItemsRef.current = totalItems;
+      return () => window.clearTimeout(timer);
+    }
+    return undefined;
+  }, [totalItems]);
+
+  return (
     <section className="space-y-6 bg-app text-app-text p-6 rounded-3xl">
       <header className="app-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="section-title">Tienda de {tenant?.name || 'tu negocio'}</h2>
+            <h2 className="section-title">Tienda de {tenantName || 'tu negocio'}</h2>
             <p className="section-subtitle">Explora productos disponibles y compra en minutos.</p>
           </div>
         </div>
@@ -52,9 +93,9 @@ export function StorefrontPage() {
         ) : null}
       </header>
 
-      {productsQuery.isLoading ? (
+      {isLoading ? (
         <p className="text-sm text-muted">Cargando catalogo...</p>
-      ) : productsQuery.isError ? (
+      ) : isError ? (
         <p className="text-sm text-secondary">No se pudo cargar el catalogo.</p>
       ) : products.length === 0 ? (
         <p className="text-sm text-muted">No hay productos disponibles en este momento.</p>
@@ -79,13 +120,28 @@ export function StorefrontPage() {
                 <span className="text-sm font-semibold">$ {product.price}</span>
               </div>
               <p className="text-xs text-muted">Stock disponible: {product.stock}</p>
-              <button className="btn-primary" type="button">
-                Agregar al carrito
+              <button
+                className="btn-primary"
+                type="button"
+                onClick={() => addItem({ id: product.id, name: product.name, price: product.price })}
+              >
+                Anadir al carrito
               </button>
             </div>
           ))}
         </div>
       )}
+
+      <button
+        className={`fixed bottom-6 right-6 flex items-center gap-2 rounded-full border border-[#00F0FF] bg-[#0A0F1E]/80 px-5 py-3 text-sm font-semibold text-ink shadow-lg ${isBouncing ? 'animate-bounce' : ''}`}
+        type="button"
+        onClick={() => setIsCartOpen(true)}
+      >
+        Carrito
+        <span className="rounded-full bg-[#8A2BE2] px-2 py-1 text-xs font-semibold text-white">
+          {totalItems}
+        </span>
+      </button>
     </section>
   );
 }

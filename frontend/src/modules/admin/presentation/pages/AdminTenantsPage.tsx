@@ -157,7 +157,7 @@ export function AdminTenantsPage() {
               <thead className="border-b border-white/10 text-xs uppercase text-zinc-400">
                 <tr>
                   <th className="py-3 pr-4 font-medium">Nombre</th>
-                  <th className="py-3 px-4 font-medium">Slug</th>
+                  <th className="py-3 px-4 font-medium">Identificador de URL</th>
                   <th className="py-3 px-4 font-medium">Plan</th>
                   <th className="py-3 px-4 font-medium">Estado</th>
                   <th className="py-3 pl-4 font-medium text-right">Acciones</th>

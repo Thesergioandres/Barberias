@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../../../shared/infrastructure/http/apiClient';
 
@@ -32,6 +32,8 @@ export function AdminInventoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
 
   const inventoryQuery = useQuery({
     queryKey: ['inventory'],
@@ -47,6 +49,7 @@ export function AdminInventoryPage() {
     setEditingItem(null);
     setForm(emptyForm);
     setActionError(null);
+    setImagePreview('');
     setIsModalOpen(true);
   };
 
@@ -62,6 +65,7 @@ export function AdminInventoryPage() {
       active: item.active
     });
     setActionError(null);
+    setImagePreview(item.imageUrl || '');
     setIsModalOpen(true);
   };
 
@@ -69,6 +73,33 @@ export function AdminInventoryPage() {
     setIsModalOpen(false);
     setEditingItem(null);
     setActionError(null);
+    setImagePreview('');
+  };
+
+  const uploadImage = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const result = await apiRequest<{ url: string }>('/upload', {
+      method: 'POST',
+      body: formData
+    });
+    return result.url;
+  };
+
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setActionError(null);
+    try {
+      const url = await uploadImage(file);
+      setForm((prev) => ({ ...prev, imageUrl: url }));
+      setImagePreview(url);
+    } catch (err: any) {
+      setActionError(err.message || 'No se pudo subir la imagen');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -211,14 +242,25 @@ export function AdminInventoryPage() {
                   onChange={(event) => setForm((prev) => ({ ...prev, sku: event.target.value }))}
                 />
               </label>
-              <label className="text-sm">
-                Imagen URL
-                <input
-                  className="input-field mt-2"
-                  value={form.imageUrl}
-                  onChange={(event) => setForm((prev) => ({ ...prev, imageUrl: event.target.value }))}
-                />
-              </label>
+              <div className="space-y-2">
+                <label className="text-sm">
+                  Subir imagen
+                  <input
+                    className="input-field mt-2"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    disabled={uploading}
+                  />
+                </label>
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt="Vista previa"
+                    className="h-20 w-full rounded-xl object-cover"
+                  />
+                ) : null}
+              </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="text-sm">

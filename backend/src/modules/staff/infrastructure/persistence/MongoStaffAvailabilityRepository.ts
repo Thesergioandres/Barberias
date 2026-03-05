@@ -1,4 +1,4 @@
-import { StaffScheduleModel, StaffBlockModel } from '../../../../shared/infrastructure/mongoose/models/StaffAvailabilityModels.js';
+import { StaffScheduleModel, StaffBlockModel } from '../../../../shared/infrastructure/mongoose/models/StaffAvailabilityModels';
 import type { StaffAvailabilityRepository, CreateBlockInput, UpsertScheduleInput } from '../../application/ports/StaffAvailabilityRepository';
 import type { StaffBlock, StaffSchedule } from '../../domain/entities/StaffAvailability';
 

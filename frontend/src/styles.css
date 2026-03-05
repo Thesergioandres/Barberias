@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -15,24 +16,24 @@
 @layer base {
 	:root {
 		color-scheme: dark;
-		--bg-app: #0f1118;
-		--text-app: #f8fafc;
-		--primary: #f4b41a;
-		--secondary: #f9d784;
-		--surface: #0b0c10;
-		--panel: #15171e;
+		--bg-app: #0A0F1E;
+		--text-app: #FFFFFF;
+		--primary: #00F0FF;
+		--secondary: #8A2BE2;
+		--surface: #0A0F1E;
+		--panel: #111733;
 		--ink: #f8fafc;
-		--muted: #c3cad6;
+		--muted: #a5b2d6;
 		--outline: rgba(248, 250, 252, 0.12);
 		--logo-url: none;
 	}
 
 	body {
-		font-family: "Space Grotesk", "Sora", "Arial", sans-serif;
+		font-family: "Manrope", "Segoe UI", sans-serif;
 		background:
-			radial-gradient(1200px 520px at 12% -10%, color-mix(in oklab, var(--primary), transparent 76%), transparent 60%),
-			radial-gradient(900px 420px at 92% 0%, color-mix(in oklab, var(--secondary), transparent 82%), transparent 60%),
-			linear-gradient(180deg, var(--surface) 0%, color-mix(in oklab, var(--surface), #0f1118 55%) 60%, #050608 100%);
+			radial-gradient(900px 500px at 12% -10%, rgba(0, 240, 255, 0.18), transparent 60%),
+			radial-gradient(1000px 520px at 92% -5%, rgba(138, 43, 226, 0.18), transparent 55%),
+			linear-gradient(180deg, #0A0F1E 0%, #0A0F1E 100%);
 		color: var(--ink);
 		min-height: 100vh;
 	}
@@ -101,7 +102,7 @@
 	}
 
 	.btn-primary {
-		@apply inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-black transition;
+		@apply inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-black transition;
 		background-color: var(--primary);
 	}
 
@@ -110,7 +111,7 @@
 	}
 
 	.btn-secondary {
-		@apply inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm font-semibold transition;
+		@apply inline-flex items-center gap-2 rounded-xl border px-5 py-2 text-sm font-semibold transition;
 		border-color: color-mix(in oklab, var(--primary), transparent 60%);
 		color: var(--secondary);
 		background-color: color-mix(in oklab, var(--primary), transparent 84%);

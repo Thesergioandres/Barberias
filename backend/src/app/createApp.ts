@@ -1,4 +1,5 @@
 import express, { type Express } from 'express';
+import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -27,6 +28,7 @@ import { createNotificationsModule } from '../modules/notifications/module';
 import { createAppointmentsModule } from '../modules/appointments/module';
 import { createReportsModule } from '../modules/reports/module';
 import { createInventoryModule } from '../modules/inventory/module';
+import { createUploadRoutes } from '../routes/upload';
 import { healthRouter } from '../routes/health';
 import type { Env } from '../config/env';
 import type { Logger } from 'pino';
@@ -122,7 +124,7 @@ export function createApp({
     tenantsRepository
   });
 
-  const { inventoryRoutes } = createInventoryModule({
+  const { inventoryRoutes, inventoryRepository } = createInventoryModule({
     useMongo: persistence.useMongo,
     authenticateJwt: authMiddleware,
     requireRoles
@@ -148,6 +150,11 @@ export function createApp({
     requireRoles
   });
   const { authRoutes } = createAuthModule({ env, usersRepository });
+
+  const { uploadRoutes } = createUploadRoutes({
+    authenticateJwt: authMiddleware,
+    requireRoles
+  });
 
   const tenantsRoutes = createTenantsRoutes({
     tenantsRepository,
@@ -186,6 +193,7 @@ export function createApp({
     })
   );
   app.use(express.json());
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
   const swaggerSpec = swaggerJsDoc({
     definition: {
@@ -211,6 +219,7 @@ export function createApp({
   app.use('/api/reports', reportsRoutes);
   app.use('/api/notifications', notificationsRoutes);
   app.use('/api/inventory', inventoryRoutes);
+  app.use('/api/upload', uploadRoutes);
 
   app.use((_req, res) => {
     res.status(404).json({ message: 'Recurso no encontrado' });

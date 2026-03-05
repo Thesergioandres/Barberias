@@ -1,5 +1,6 @@
+import { ChangeEvent, useMemo, useState } from 'react';
 import { PlanGuard } from '../../../shared/components/PlanGuard';
-import { useTenant } from '../../../shared/context/TenantContext';
+import { useTenant, type TenantRecord } from '../../../shared/context/TenantContext';
 import { useLabels } from '../../../shared/hooks/useLabels';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '../../../shared/infrastructure/http/apiClient';
@@ -21,8 +22,11 @@ type SummaryResponse = {
 };
 
 export function AdminHomePage() {
-  const { tenant } = useTenant();
+  const { tenant, setTenant } = useTenant();
   const labels = useLabels();
+  const [copied, setCopied] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
   const activeModules = tenant?.activeModules || [];
   const isBarbershop = (tenant?.verticalSlug || '').toLowerCase() === 'barberias';
 
@@ -62,11 +66,66 @@ export function AdminHomePage() {
     ? summary.salesTrend.map((value, index) => ({ day: `D${index + 1}`, sales: value }))
     : [];
 
+  const publicUrl = useMemo(() => {
+    if (!tenant?.subdomain) {
+      return window.location.origin;
+    }
+    const hostParts = window.location.hostname.split('.');
+    const baseDomain = hostParts.length > 2 ? hostParts.slice(1).join('.') : window.location.hostname;
+    return `${window.location.protocol}//${tenant.subdomain}.${baseDomain}`;
+  }, [tenant?.subdomain]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  const uploadLogo = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const result = await apiRequest<{ url: string }>('/upload', {
+      method: 'POST',
+      body: formData
+    });
+    return result.url;
+  };
+
+  const handleLogoChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !tenant?.id) return;
+    setLogoUploading(true);
+    setLogoError(null);
+    try {
+      const url = await uploadLogo(file);
+      const updated = await apiRequest<TenantRecord>(`/tenants/${tenant.id}/logo`, {
+        method: 'PATCH',
+        body: JSON.stringify({ logoUrl: url })
+      });
+      setTenant(updated || { ...tenant, logoUrl: url });
+    } catch (err: any) {
+      setLogoError(err.message || 'No se pudo actualizar el logo');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   return (
     <section className="space-y-6">
       <header className="app-card">
-        <h2 className="section-title">Control operativo</h2>
-        <p className="section-subtitle">Agenda viva, equipo y comunicaciones en un solo lugar.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="section-title">Control operativo</h2>
+            <p className="section-subtitle">Agenda viva, equipo y comunicaciones en un solo lugar.</p>
+          </div>
+          <button className="btn-secondary" type="button" onClick={handleCopy}>
+            {copied ? 'URL copiada' : 'Compartir URL publica'}
+          </button>
+        </div>
       </header>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -130,6 +189,29 @@ export function AdminHomePage() {
           )}
         </div>
       ) : null}
+
+      <div className="app-card">
+        <h3 className="text-lg font-semibold">Identidad del negocio</h3>
+        <p className="mt-2 text-sm text-muted">Sube tu logo para personalizar la experiencia.</p>
+        {logoError ? <p className="mt-3 text-sm text-secondary">{logoError}</p> : null}
+        <div className="mt-4 flex flex-wrap items-center gap-4">
+          {tenant?.logoUrl ? (
+            <img src={tenant.logoUrl} alt="Logo" className="h-16 w-16 rounded-2xl object-cover" />
+          ) : (
+            <div className="h-16 w-16 rounded-2xl border border-white/10 bg-white/5" />
+          )}
+          <label className="text-sm">
+            <span className="block text-xs uppercase tracking-[0.2em] text-muted">Subir logo</span>
+            <input
+              className="input-field mt-2"
+              type="file"
+              accept="image/*"
+              onChange={handleLogoChange}
+              disabled={logoUploading}
+            />
+          </label>
+        </div>
+      </div>
 
       <PlanGuard requiredPlan="PRO">
         <div className="app-card">

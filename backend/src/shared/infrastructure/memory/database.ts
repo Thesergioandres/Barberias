@@ -83,9 +83,11 @@ type Product = {
   tenantId: string;
   name: string;
   sku?: string;
+  category: string;
   description?: string;
   price: number;
   stock: number;
+  imageUrl?: string;
   active: boolean;
   lastCost?: number;
   averageCost?: number;

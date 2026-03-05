@@ -105,7 +105,7 @@ export function CreateTenantPage() {
               <input className="input-field mt-2" value={form.tenantName} onChange={updateField('tenantName')} required />
             </label>
             <label className="text-sm">
-              Slug
+              Identificador de URL
               <input className="input-field mt-2" value={form.slug} onChange={updateField('slug')} required />
             </label>
           </div>
