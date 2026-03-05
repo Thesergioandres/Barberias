@@ -6,16 +6,22 @@ import {
   RouterProvider
 } from 'react-router-dom';
 import { useMemo, type ReactElement } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../shared/context/AuthContext';
+import { useTenant } from '../shared/context/TenantContext';
 import { LoginCard } from '../shared/components/LoginCard';
 import { WaitingApprovalPage } from '../modules/auth/presentation/pages/WaitingApprovalPage';
 import { BookingEnginePage } from '../modules/client/BookingEnginePage';
+import { StorefrontPage } from '../modules/client/StorefrontPage';
+import { TenantLandingSwitch } from '../modules/client/TenantLandingSwitch';
 import { LandingPage } from '../modules/landing/LandingPage';
 import { BarberiasLandingPage } from '../modules/landing/BarberiasLandingPage';
 import { BarberiasClientLoginPage } from '../modules/landing/BarberiasClientLoginPage';
 import { BarbershopLandingPage } from '../modules/landing/presentation/pages/BarbershopLandingPage';
 import { AdminHomePage } from '../modules/admin/pages/AdminHomePage';
 import { GodPanelPage } from '../modules/god/GodPanelPage';
+import { LicenseExpiredPage } from '../modules/admin/presentation/pages/LicenseExpiredPage';
+import { OnboardingPendingPage } from '../modules/admin/presentation/pages/OnboardingPendingPage';
 import { CreateTenantPage } from '../modules/onboarding/CreateTenantPage';
 import { AppLayout } from '../shared/layouts/AppLayout';
 import { BookingLayout } from '../shared/layouts/BookingLayout';
@@ -39,6 +45,29 @@ export function AppRouter() {
     : '/login';
 
   const router = useMemo(() => {
+    const PanelStatusGuard = ({ children }: { children: ReactElement }) => {
+      const { tenant, loading } = useTenant();
+      const location = useLocation();
+      const role = user?.role;
+
+      if (role !== 'ADMIN' && role !== 'STAFF') {
+        return children;
+      }
+
+      if (loading) {
+        return <div className="app-card">Cargando entorno...</div>;
+      }
+
+      if (tenant?.status === 'suspended') {
+        return <Navigate to="/license-expired" replace state={{ from: location.pathname }} />;
+      }
+
+      if (tenant?.status === 'onboarding') {
+        return <Navigate to="/onboarding-pending" replace state={{ from: location.pathname }} />;
+      }
+
+      return children;
+    };
     const moduleRoutes = Object.values(moduleRegistry).flatMap((module) => {
       const routes: Array<{ key: string; path: string; element: ReactElement }> = [];
       if (module.adminPath && module.adminElement) {
@@ -68,7 +97,9 @@ export function AppRouter() {
 
     const tenantRoutes = createRoutesFromElements(
       <Route element={<BookingLayout />}>
-        <Route index element={<BookingEnginePage />} />
+        <Route index element={<TenantLandingSwitch />} />
+        <Route path="/booking" element={<BookingEnginePage />} />
+        <Route path="/storefront" element={<StorefrontPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     );
@@ -84,7 +115,7 @@ export function AppRouter() {
         } />
         <Route path="/waiting" element={<WaitingApprovalPage />} />
         <Route path="/onboarding" element={<CreateTenantPage />} />
-        <Route element={<AppLayout />}>
+        <Route element={<PanelStatusGuard><AppLayout /></PanelStatusGuard>}>
           <Route index element={<Navigate to={defaultAppPath} replace />} />
           <Route
             path="/admin"
@@ -110,6 +141,8 @@ export function AppRouter() {
             }
           />
         </Route>
+        <Route path="/license-expired" element={<LicenseExpiredPage />} />
+        <Route path="/onboarding-pending" element={<OnboardingPendingPage />} />
         <Route path="*" element={<Navigate to={defaultAppPath} replace />} />
       </>
     );

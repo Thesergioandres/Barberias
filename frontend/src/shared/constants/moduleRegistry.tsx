@@ -6,6 +6,7 @@ import { AdminWhatsAppPage } from '../../modules/admin/pages/AdminWhatsAppPage';
 import { AdminInventoryPage } from '../../modules/admin/pages/AdminInventoryPage';
 import { AdminReportsPage } from '../../modules/admin/pages/AdminReportsPage';
 import { AdminServicesPage } from '../../modules/admin/presentation/pages/AdminServicesPage';
+import { AdminPOSPage } from '../../modules/admin/pages/AdminPOSPage';
 import { StaffDashboardPage } from '../../modules/staff/presentation/pages/StaffDashboardPage';
 import { ModulePlaceholder } from '../components/ModulePlaceholder';
 import type { AppModule } from '../types/appModules';
@@ -75,12 +76,7 @@ export const moduleRegistry: Record<ModuleKey, ModuleRegistryEntry> = {
     key: 'pos',
     label: 'POS',
     adminPath: '/admin/pos',
-    adminElement: (
-      <ModulePlaceholder
-        title="POS y comandas"
-        description="Modulo operativo para mesas, comandas y caja."
-      />
-    )
+    adminElement: <AdminPOSPage />
   },
   digital_menu: {
     key: 'digital_menu',

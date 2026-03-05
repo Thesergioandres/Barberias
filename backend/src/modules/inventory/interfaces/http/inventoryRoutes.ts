@@ -23,6 +23,14 @@ export function createInventoryRoutes({
 }) {
   const router = Router();
 
+  router.get('/public', async (req: Request, res: Response) => {
+    const tenantId = typeof req.query.tenantId === 'string' ? req.query.tenantId : '';
+    if (!tenantId) return res.status(400).json({ message: 'tenantId is required' });
+
+    const items = await inventoryRepository.listPublic(tenantId);
+    res.json(items);
+  });
+
   router.get('/', authMiddleware, requireRolesMiddleware('ADMIN'), async (req: Request, res: Response) => {
     const tenantId = req.auth?.tenantId;
     if (!tenantId) return res.status(403).json({ message: 'No tenantId' });

@@ -7,9 +7,11 @@ type ProductDoc = {
   tenantId: string;
   name: string;
   sku?: string;
+  category?: string;
   description?: string;
   price: number;
   stock: number;
+  imageUrl?: string;
   active: boolean;
   lastCost?: number;
   averageCost?: number;
@@ -36,9 +38,11 @@ function mapProduct(document: ProductDoc): ProductRecord | null {
     tenantId: document.tenantId,
     name: document.name,
     sku: document.sku,
+    category: document.category || '',
     description: document.description,
     price: document.price,
     stock: document.stock,
+    imageUrl: document.imageUrl || undefined,
     active: document.active,
     lastCost: document.lastCost,
     averageCost: document.averageCost,
@@ -62,6 +66,11 @@ export class MongoInventoryRepository implements InventoryRepository {
     return docs.map((doc) => mapProduct(doc) as ProductRecord);
   }
 
+  async listPublic(tenantId: string): Promise<ProductRecord[]> {
+    const docs = await ProductModel.find({ tenantId, active: true, stock: { $gt: 0 } }).lean<ProductDoc[]>();
+    return docs.map((doc) => mapProduct(doc) as ProductRecord);
+  }
+
   async findById(id: string, tenantId: string): Promise<ProductRecord | null> {
     const doc = await ProductModel.findOne({ _id: id, tenantId }).lean<ProductDoc>();
     return mapProduct(doc);
@@ -72,9 +81,11 @@ export class MongoInventoryRepository implements InventoryRepository {
       tenantId: payload.tenantId,
       name: payload.name,
       sku: payload.sku || '',
+      category: payload.category,
       description: payload.description || '',
       price: Number(payload.price),
       stock: Number(payload.stock),
+      imageUrl: payload.imageUrl || '',
       active: payload.active ?? true,
       lastCost: 0,
       averageCost: 0,
@@ -91,9 +102,11 @@ export class MongoInventoryRepository implements InventoryRepository {
     const update: Record<string, unknown> = {};
     if (payload.name !== undefined) update.name = payload.name;
     if (payload.sku !== undefined) update.sku = payload.sku;
+    if (payload.category !== undefined) update.category = payload.category;
     if (payload.description !== undefined) update.description = payload.description;
     if (payload.price !== undefined) update.price = Number(payload.price);
     if (payload.stock !== undefined) update.stock = Number(payload.stock);
+    if (payload.imageUrl !== undefined) update.imageUrl = payload.imageUrl;
     if (payload.active !== undefined) update.active = payload.active;
 
     const doc = await ProductModel.findByIdAndUpdate(id, update, { new: true }).lean<ProductDoc>();

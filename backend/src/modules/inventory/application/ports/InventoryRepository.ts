@@ -4,9 +4,11 @@ export type CreateProductInput = {
   tenantId: string;
   name: string;
   sku?: string;
+  category: string;
   description?: string;
   price: number;
   stock: number;
+  imageUrl?: string;
   active?: boolean;
 };
 
@@ -27,6 +29,7 @@ export type RestockInput = {
 
 export interface InventoryRepository {
   list(tenantId: string): Promise<ProductRecord[]>;
+  listPublic(tenantId: string): Promise<ProductRecord[]>;
   findById(id: string, tenantId: string): Promise<ProductRecord | null>;
   create(input: CreateProductInput): Promise<ProductRecord>;
   update(id: string, input: UpdateProductInput): Promise<ProductRecord | null>;

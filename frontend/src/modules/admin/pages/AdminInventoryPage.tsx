@@ -1,4 +1,5 @@
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../../../shared/infrastructure/http/apiClient';
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -7,146 +8,117 @@ type InventoryItem = {
   id: string;
   name: string;
   sku?: string;
+  category: string;
   price: number;
   stock: number;
+  imageUrl?: string;
   active: boolean;
-  lastCost?: number;
-  averageCost?: number;
-  lastRestockedAt?: string;
-  restocks?: Array<{
-    date: string;
-    supplier?: string;
-    quantity: number;
-    unitCost: number;
-    totalCost: number;
-  }>;
 };
 
-type SaleItem = {
-  productId: string;
-  quantity: number;
-};
-
-const initialProduct = {
+const emptyForm = {
   name: '',
   sku: '',
-  price: '',
-  stock: ''
-};
-
-const initialRestock = {
-  productId: '',
-  quantity: 1,
-  unitCost: '',
-  supplier: '',
-  arrivedAt: new Date().toISOString().split('T')[0]
+  category: '',
+  price: 0,
+  stock: 0,
+  imageUrl: '',
+  active: true
 };
 
 export function AdminInventoryPage() {
-  const [items, setItems] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState(initialProduct);
-  const [sale, setSale] = useState<SaleItem>({ productId: '', quantity: 1 });
-  const [saleMessage, setSaleMessage] = useState<string | null>(null);
-  const [restock, setRestock] = useState(initialRestock);
-  const [restockMessage, setRestockMessage] = useState<string | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState('');
+  const [form, setForm] = useState(emptyForm);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const lowStock = useMemo(() => items.filter((item) => item.stock <= LOW_STOCK_THRESHOLD), [items]);
-  const selectedProduct = useMemo(
-    () => items.find((item) => item.id === selectedProductId) || null,
-    [items, selectedProductId]
+  const inventoryQuery = useQuery({
+    queryKey: ['inventory'],
+    queryFn: () => apiRequest<InventoryItem[]>('/inventory')
+  });
+
+  const lowStock = useMemo(
+    () => (inventoryQuery.data || []).filter((item) => item.stock <= LOW_STOCK_THRESHOLD),
+    [inventoryQuery.data]
   );
 
-  const loadInventory = async () => {
+  const openCreate = () => {
+    setEditingItem(null);
+    setForm(emptyForm);
+    setActionError(null);
+    setIsModalOpen(true);
+  };
+
+  const openEdit = (item: InventoryItem) => {
+    setEditingItem(item);
+    setForm({
+      name: item.name,
+      sku: item.sku || '',
+      category: item.category,
+      price: item.price,
+      stock: item.stock,
+      imageUrl: item.imageUrl || '',
+      active: item.active
+    });
+    setActionError(null);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingItem(null);
+    setActionError(null);
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setActionError(null);
     try {
-      setLoading(true);
-      const data = await apiRequest<InventoryItem[]>('/inventory');
-      setItems(data);
+      if (editingItem) {
+        await apiRequest(`/inventory/${editingItem.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(form)
+        });
+      } else {
+        await apiRequest('/inventory', {
+          method: 'POST',
+          body: JSON.stringify(form)
+        });
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      closeModal();
     } catch (err: any) {
-      setError(err.message || 'No se pudo cargar inventario');
-    } finally {
-      setLoading(false);
+      setActionError(err.message || 'No se pudo guardar el producto');
     }
   };
 
-  useEffect(() => {
-    loadInventory();
-  }, []);
-
-  const updateField = (field: keyof typeof form) => (event: ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }));
-  };
-
-  const createProduct = async (event: FormEvent) => {
-    event.preventDefault();
+  const toggleItem = async (item: InventoryItem) => {
     setError(null);
-
     try {
-      await apiRequest('/inventory', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: form.name,
-          sku: form.sku || undefined,
-          price: Number(form.price),
-          stock: Number(form.stock)
-        })
+      await apiRequest(`/inventory/${item.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ active: !item.active })
       });
-      setForm(initialProduct);
-      await loadInventory();
+      await queryClient.invalidateQueries({ queryKey: ['inventory'] });
     } catch (err: any) {
-      setError(err.message || 'No se pudo crear producto');
-    }
-  };
-
-  const recordSale = async (event: FormEvent) => {
-    event.preventDefault();
-    setSaleMessage(null);
-
-    try {
-      const result = await apiRequest<{ total: number }>('/inventory/sales', {
-        method: 'POST',
-        body: JSON.stringify({
-          items: [{ productId: sale.productId, quantity: Number(sale.quantity) }]
-        })
-      });
-      setSaleMessage(`Venta registrada. Total $${result.total}`);
-      setSale({ productId: '', quantity: 1 });
-      await loadInventory();
-    } catch (err: any) {
-      setError(err.message || 'No se pudo registrar venta');
-    }
-  };
-
-  const recordRestock = async (event: FormEvent) => {
-    event.preventDefault();
-    setRestockMessage(null);
-
-    try {
-      await apiRequest('/inventory/restock', {
-        method: 'POST',
-        body: JSON.stringify({
-          productId: restock.productId,
-          quantity: Number(restock.quantity),
-          unitCost: Number(restock.unitCost),
-          supplier: restock.supplier || undefined,
-          arrivedAt: restock.arrivedAt
-        })
-      });
-      setRestockMessage('Stock actualizado correctamente.');
-      setRestock(initialRestock);
-      await loadInventory();
-    } catch (err: any) {
-      setError(err.message || 'No se pudo registrar el pedido');
+      setError(err.message || 'No se pudo actualizar el producto');
     }
   };
 
   return (
     <section className="space-y-6">
       <header className="app-card">
-        <h2 className="section-title">Panel de inventario</h2>
-        <p className="section-subtitle">Controla stock y registra ventas rapidas.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="section-title">Panel de inventario</h2>
+            <p className="section-subtitle">Controla productos, stock y precios.</p>
+          </div>
+          <button className="btn-primary" type="button" onClick={openCreate}>
+            Nuevo producto
+          </button>
+        </div>
       </header>
 
       {error ? <div className="app-card text-sm text-secondary">{error}</div> : null}
@@ -165,209 +137,133 @@ export function AdminInventoryPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="app-card">
-          <h3 className="text-lg font-semibold">Productos</h3>
-          {loading ? (
-            <p className="mt-4 text-sm text-muted">Cargando inventario...</p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              {items.map((item) => (
-                <div key={item.id} className="app-card-soft flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold">{item.name}</p>
-                    <p className="text-xs text-muted">SKU: {item.sku || 'N/A'}</p>
-                    <p className="text-xs text-muted">
-                      Costo prom: $ {item.averageCost?.toFixed(2) ?? '0.00'}
-                    </p>
-                    <p className="text-xs text-muted">
-                      Margen: {item.price > 0
-                        ? `${Math.round(((item.price - (item.averageCost ?? 0)) / item.price) * 100)}%`
-                        : '0%'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-ink">$ {item.price}</p>
-                    <p className={`text-xs ${item.stock <= LOW_STOCK_THRESHOLD ? 'text-secondary' : 'text-muted'}`}>
-                      Stock: {item.stock}
-                    </p>
-                    <p className="text-xs text-muted">
-                      Ultimo ingreso: {item.lastRestockedAt ? item.lastRestockedAt.slice(0, 10) : 'Sin datos'}
-                    </p>
+      <div className="app-card">
+        <h3 className="text-lg font-semibold">Productos</h3>
+        {inventoryQuery.isLoading ? (
+          <p className="mt-4 text-sm text-muted">Cargando inventario...</p>
+        ) : inventoryQuery.isError ? (
+          <p className="mt-4 text-sm text-secondary">No se pudo cargar inventario.</p>
+        ) : (
+          <div className="mt-4 grid gap-3">
+            {(inventoryQuery.data || []).map((item) => (
+              <div key={item.id} className="app-card-soft flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">{item.name}</p>
+                  <p className="text-xs text-muted">SKU: {item.sku || 'N/A'}</p>
+                  <p className="text-xs text-muted">Categoria: {item.category}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-ink">$ {item.price}</p>
+                  <p className={`text-xs ${item.stock <= LOW_STOCK_THRESHOLD ? 'text-secondary' : 'text-muted'}`}>
+                    Stock: {item.stock}
+                  </p>
+                  <div className="mt-2 flex items-center justify-end gap-2">
+                    <button className="btn-ghost" type="button" onClick={() => openEdit(item)}>
+                      Editar
+                    </button>
+                    <button className="btn-ghost" type="button" onClick={() => toggleItem(item)}>
+                      {item.active ? 'Desactivar' : 'Activar'}
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          <form className="app-card space-y-3" onSubmit={createProduct}>
-            <h3 className="text-lg font-semibold">Agregar producto</h3>
-            <label className="text-sm">
-              Nombre
-              <input className="input-field mt-2" value={form.name} onChange={updateField('name')} required />
-            </label>
-            <label className="text-sm">
-              SKU
-              <input className="input-field mt-2" value={form.sku} onChange={updateField('sku')} />
-            </label>
-            <label className="text-sm">
-              Precio
-              <input className="input-field mt-2" type="number" value={form.price} onChange={updateField('price')} required />
-            </label>
-            <label className="text-sm">
-              Stock inicial
-              <input className="input-field mt-2" type="number" value={form.stock} onChange={updateField('stock')} required />
-            </label>
-            <button className="btn-primary" type="submit">Guardar producto</button>
-          </form>
-
-          <form className="app-card space-y-3" onSubmit={recordSale}>
-            <h3 className="text-lg font-semibold">Venta rapida</h3>
-            <label className="text-sm">
-              Producto
-              <select
-                className="select-field mt-2"
-                value={sale.productId}
-                onChange={(event) => setSale((prev) => ({ ...prev, productId: event.target.value }))}
-                required
-              >
-                <option value="">Selecciona producto</option>
-                {items.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
-                ))}
-              </select>
-            </label>
-            <label className="text-sm">
-              Cantidad
-              <input
-                className="input-field mt-2"
-                type="number"
-                min={1}
-                value={sale.quantity}
-                onChange={(event) => setSale((prev) => ({ ...prev, quantity: Number(event.target.value) }))}
-                required
-              />
-            </label>
-            <button className="btn-secondary" type="submit">Registrar venta</button>
-            {saleMessage ? <p className="text-xs text-muted">{saleMessage}</p> : null}
-          </form>
-
-          <form className="app-card space-y-3" onSubmit={recordRestock}>
-            <h3 className="text-lg font-semibold">Ingreso de proveedor</h3>
-            <label className="text-sm">
-              Producto
-              <select
-                className="select-field mt-2"
-                value={restock.productId}
-                onChange={(event) => setRestock((prev) => ({ ...prev, productId: event.target.value }))}
-                required
-              >
-                <option value="">Selecciona producto</option>
-                {items.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
-                ))}
-              </select>
-            </label>
-            <label className="text-sm">
-              Cantidad recibida
-              <input
-                className="input-field mt-2"
-                type="number"
-                min={1}
-                value={restock.quantity}
-                onChange={(event) => setRestock((prev) => ({ ...prev, quantity: Number(event.target.value) }))}
-                required
-              />
-            </label>
-            <label className="text-sm">
-              Costo unitario
-              <input
-                className="input-field mt-2"
-                type="number"
-                min={0}
-                step="0.01"
-                value={restock.unitCost}
-                onChange={(event) => setRestock((prev) => ({ ...prev, unitCost: event.target.value }))}
-                required
-              />
-            </label>
-            <label className="text-sm">
-              Proveedor
-              <input
-                className="input-field mt-2"
-                value={restock.supplier}
-                onChange={(event) => setRestock((prev) => ({ ...prev, supplier: event.target.value }))}
-              />
-            </label>
-            <label className="text-sm">
-              Fecha de llegada
-              <input
-                className="input-field mt-2"
-                type="date"
-                value={restock.arrivedAt}
-                onChange={(event) => setRestock((prev) => ({ ...prev, arrivedAt: event.target.value }))}
-                required
-              />
-            </label>
-            <button className="btn-secondary" type="submit">Registrar ingreso</button>
-            {restockMessage ? <p className="text-xs text-muted">{restockMessage}</p> : null}
-          </form>
-        </div>
-      </div>
-
-      <div className="app-card">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold">Historial de reabastecimiento</h3>
-            <p className="text-sm text-muted">Consulta fechas, proveedores y costos de compra.</p>
-          </div>
-          <select
-            className="select-field max-w-xs"
-            value={selectedProductId}
-            onChange={(event) => setSelectedProductId(event.target.value)}
-          >
-            <option value="">Selecciona producto</option>
-            {items.map((item) => (
-              <option key={item.id} value={item.id}>{item.name}</option>
+              </div>
             ))}
-          </select>
-        </div>
-
-        {!selectedProduct ? (
-          <p className="mt-4 text-sm text-muted">Selecciona un producto para ver su historial.</p>
-        ) : selectedProduct.restocks && selectedProduct.restocks.length > 0 ? (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-[0.2em] text-muted">
-                <tr>
-                  <th className="pb-3">Fecha</th>
-                  <th className="pb-3">Proveedor</th>
-                  <th className="pb-3">Cantidad</th>
-                  <th className="pb-3">Costo unit.</th>
-                  <th className="pb-3">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...selectedProduct.restocks]
-                  .sort((a, b) => b.date.localeCompare(a.date))
-                  .map((restockItem, index) => (
-                    <tr key={`${restockItem.date}-${index}`} className="border-t border-outline">
-                      <td className="py-3 text-muted">{restockItem.date.slice(0, 10)}</td>
-                      <td className="py-3">{restockItem.supplier || 'Sin proveedor'}</td>
-                      <td className="py-3">{restockItem.quantity}</td>
-                      <td className="py-3">$ {restockItem.unitCost.toFixed(2)}</td>
-                      <td className="py-3">$ {restockItem.totalCost.toFixed(2)}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
           </div>
-        ) : (
-          <p className="mt-4 text-sm text-muted">No hay reabastecimientos registrados.</p>
         )}
       </div>
+
+      {isModalOpen ? (
+        <div className="overlay-surface fixed inset-0 z-50 flex items-center justify-center backdrop-blur">
+          <form className="app-card w-full max-w-lg space-y-4" onSubmit={handleSubmit}>
+            <div>
+              <h3 className="text-lg font-semibold">
+                {editingItem ? 'Editar producto' : 'Nuevo producto'}
+              </h3>
+              <p className="text-sm text-muted">Define nombre, categoria y stock disponible.</p>
+            </div>
+
+            {actionError ? <p className="text-sm text-secondary">{actionError}</p> : null}
+
+            <label className="text-sm">
+              Nombre
+              <input
+                className="input-field mt-2"
+                value={form.name}
+                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                required
+              />
+            </label>
+            <label className="text-sm">
+              Categoria
+              <input
+                className="input-field mt-2"
+                value={form.category}
+                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+                required
+              />
+            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="text-sm">
+                SKU
+                <input
+                  className="input-field mt-2"
+                  value={form.sku}
+                  onChange={(event) => setForm((prev) => ({ ...prev, sku: event.target.value }))}
+                />
+              </label>
+              <label className="text-sm">
+                Imagen URL
+                <input
+                  className="input-field mt-2"
+                  value={form.imageUrl}
+                  onChange={(event) => setForm((prev) => ({ ...prev, imageUrl: event.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="text-sm">
+                Precio
+                <input
+                  className="input-field mt-2"
+                  type="number"
+                  min={0}
+                  value={form.price}
+                  onChange={(event) => setForm((prev) => ({ ...prev, price: Number(event.target.value) }))}
+                  required
+                />
+              </label>
+              <label className="text-sm">
+                Stock
+                <input
+                  className="input-field mt-2"
+                  type="number"
+                  min={0}
+                  value={form.stock}
+                  onChange={(event) => setForm((prev) => ({ ...prev, stock: Number(event.target.value) }))}
+                  required
+                />
+              </label>
+            </div>
+            <label className="flex items-center gap-2 text-xs text-zinc-300">
+              <input
+                type="checkbox"
+                checked={form.active}
+                onChange={(event) => setForm((prev) => ({ ...prev, active: event.target.checked }))}
+              />
+              Activo
+            </label>
+
+            <div className="flex flex-wrap justify-end gap-3">
+              <button className="btn-ghost" type="button" onClick={closeModal}>
+                Cancelar
+              </button>
+              <button className="btn-primary" type="submit">
+                {editingItem ? 'Guardar cambios' : 'Crear producto'}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { apiRequest } from '../infrastructure/http/apiClient';
 import { useAuth } from './AuthContext';
 import { resolveHostContext } from '../utils/host';
+import { VERTICALS_REGISTRY } from '../constants/verticalsRegistry';
 
 export type TenantRecord = {
   id: string;
@@ -36,10 +37,16 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
 
   const applyBranding = useCallback((nextTenant: TenantRecord | null) => {
     const root = document.documentElement;
-    const primary = nextTenant?.customColors?.primary || '#f4b41a';
-    const secondary = nextTenant?.customColors?.secondary || '#f9d784';
+    const verticalSlug = (nextTenant?.verticalSlug || '').toLowerCase();
+    const verticalTheme = VERTICALS_REGISTRY.find((item) => item.slug === verticalSlug)?.theme;
+    const background = verticalTheme?.background || '#0f1118';
+    const text = verticalTheme?.text || '#f8fafc';
+    const primary = nextTenant?.customColors?.primary || verticalTheme?.primary || '#f4b41a';
+    const secondary = nextTenant?.customColors?.secondary || verticalTheme?.secondary || '#f9d784';
     const logoUrl = nextTenant?.logoUrl ? `url("${nextTenant.logoUrl}")` : 'none';
 
+    root.style.setProperty('--bg-app', background);
+    root.style.setProperty('--text-app', text);
     root.style.setProperty('--primary', primary);
     root.style.setProperty('--secondary', secondary);
     root.style.setProperty('--logo-url', logoUrl);

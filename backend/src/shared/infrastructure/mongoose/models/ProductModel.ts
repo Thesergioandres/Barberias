@@ -4,9 +4,11 @@ type ProductDocument = {
   tenantId: string;
   name: string;
   sku?: string;
+  category: string;
   description?: string;
   price: number;
   stock: number;
+  imageUrl?: string;
   active: boolean;
   lastCost?: number;
   averageCost?: number;
@@ -29,9 +31,11 @@ const productSchema = new mongoose.Schema<ProductDocument>(
     tenantId: { type: String, required: true, index: true },
     name: { type: String, required: true },
     sku: { type: String, default: '' },
+    category: { type: String, required: true },
     description: { type: String, default: '' },
     price: { type: Number, required: true },
     stock: { type: Number, required: true },
+    imageUrl: { type: String, default: '' },
     active: { type: Boolean, default: true },
     lastCost: { type: Number, default: 0 },
     averageCost: { type: Number, default: 0 },

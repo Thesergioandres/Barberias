@@ -8,6 +8,10 @@ export class InMemoryInventoryRepository implements InventoryRepository {
     return database.inventory.filter((item) => item.tenantId === tenantId);
   }
 
+  async listPublic(tenantId: string): Promise<ProductRecord[]> {
+    return database.inventory.filter((item) => item.tenantId === tenantId && item.active && item.stock > 0);
+  }
+
   async findById(id: string, tenantId: string): Promise<ProductRecord | null> {
     const item = database.inventory.find((product) => product.id === id && product.tenantId === tenantId);
     return item || null;
@@ -19,9 +23,11 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       tenantId: payload.tenantId,
       name: payload.name,
       sku: payload.sku,
+      category: payload.category,
       description: payload.description,
       price: Number(payload.price),
       stock: Number(payload.stock),
+      imageUrl: payload.imageUrl,
       active: payload.active ?? true,
       lastCost: 0,
       averageCost: 0,
@@ -44,9 +50,11 @@ export class InMemoryInventoryRepository implements InventoryRepository {
 
     product.name = payload.name ?? product.name;
     product.sku = payload.sku ?? product.sku;
+    product.category = payload.category ?? product.category;
     product.description = payload.description ?? product.description;
     product.price = payload.price !== undefined ? Number(payload.price) : product.price;
     product.stock = payload.stock !== undefined ? Number(payload.stock) : product.stock;
+    product.imageUrl = payload.imageUrl ?? product.imageUrl;
     if (payload.active !== undefined) {
       product.active = payload.active;
     }

@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 @theme {
+	--color-app: var(--bg-app);
+	--color-app-text: var(--text-app);
 	--color-primary: var(--primary);
 	--color-secondary: var(--secondary);
 	--color-surface: var(--surface);
@@ -13,6 +15,8 @@
 @layer base {
 	:root {
 		color-scheme: dark;
+		--bg-app: #0f1118;
+		--text-app: #f8fafc;
 		--primary: #f4b41a;
 		--secondary: #f9d784;
 		--surface: #0b0c10;

@@ -1,6 +1,24 @@
 import { PlanGuard } from '../../../shared/components/PlanGuard';
 import { useTenant } from '../../../shared/context/TenantContext';
 import { useLabels } from '../../../shared/hooks/useLabels';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '../../../shared/infrastructure/http/apiClient';
+import {
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
+
+type SummaryResponse = {
+  totalSales: number;
+  appointmentsToday: number;
+  totalProducts: number;
+  activeStaff: number;
+  salesTrend: number[];
+};
 
 export function AdminHomePage() {
   const { tenant } = useTenant();
@@ -11,6 +29,38 @@ export function AdminHomePage() {
   const showAgenda = activeModules.includes('agenda');
   const showStaff = activeModules.includes('staff');
   const showPos = activeModules.includes('pos');
+  const showStorefront = activeModules.includes('ecommerce_storefront');
+  const showInventory = activeModules.includes('inventory');
+
+  const summaryQuery = useQuery({
+    queryKey: ['reports', 'summary', tenant?.id],
+    queryFn: async () => {
+      try {
+        return await apiRequest<SummaryResponse>('/reports/summary');
+      } catch {
+        return {
+          totalSales: 0,
+          appointmentsToday: 0,
+          totalProducts: 0,
+          activeStaff: 0,
+          salesTrend: []
+        } as SummaryResponse;
+      }
+    },
+    enabled: Boolean(tenant?.id)
+  });
+
+  const summary = summaryQuery.data || {
+    totalSales: 0,
+    appointmentsToday: 0,
+    totalProducts: 0,
+    activeStaff: 0,
+    salesTrend: []
+  };
+
+  const salesChartData = summary.salesTrend.length
+    ? summary.salesTrend.map((value, index) => ({ day: `D${index + 1}`, sales: value }))
+    : [];
 
   return (
     <section className="space-y-6">
@@ -19,49 +69,65 @@ export function AdminHomePage() {
         <p className="section-subtitle">Agenda viva, equipo y comunicaciones en un solo lugar.</p>
       </header>
 
-      {isBarbershop ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          {showAgenda ? (
-            <div className="app-card">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted">Citas de hoy</p>
-              <p className="mt-4 text-3xl font-semibold">18</p>
-              <p className="mt-2 text-sm text-muted">Agenda en vivo.</p>
-            </div>
-          ) : null}
-          {showStaff ? (
-            <div className="app-card">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted">{labels.staffPlural} activos</p>
-              <p className="mt-4 text-3xl font-semibold">6</p>
-              <p className="mt-2 text-sm text-muted">Turnos confirmados.</p>
-            </div>
-          ) : null}
-          {showPos ? (
-            <div className="app-card">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted">Ventas POS</p>
-              <p className="mt-4 text-3xl font-semibold">$1.2k</p>
-              <p className="mt-2 text-sm text-muted">Resumen del dia.</p>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="grid gap-4 md:grid-cols-4">
+        {showPos || showStorefront ? (
+          <div className="app-card">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted">Ventas totales</p>
+            <p className="mt-4 text-3xl font-semibold">$ {summary.totalSales}</p>
+            <p className="mt-2 text-sm text-muted">Consolidado del mes.</p>
+          </div>
+        ) : null}
+        {showAgenda ? (
+          <div className="app-card">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted">Citas de hoy</p>
+            <p className="mt-4 text-3xl font-semibold">{summary.appointmentsToday}</p>
+            <p className="mt-2 text-sm text-muted">Agenda activa.</p>
+          </div>
+        ) : null}
+        {showInventory ? (
+          <div className="app-card">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted">Total de productos</p>
+            <p className="mt-4 text-3xl font-semibold">{summary.totalProducts}</p>
+            <p className="mt-2 text-sm text-muted">Catalogo disponible.</p>
+          </div>
+        ) : null}
+        {showStaff ? (
+          <div className="app-card">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted">{labels.staffPlural} activos</p>
+            <p className="mt-4 text-3xl font-semibold">{summary.activeStaff}</p>
+            <p className="mt-2 text-sm text-muted">Equipo operativo.</p>
+          </div>
+        ) : null}
+      </div>
 
-      {!isBarbershop ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="app-card">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted">Citas hoy</p>
-            <p className="mt-4 text-3xl font-semibold">34</p>
-            <p className="mt-2 text-sm text-muted">+12% vs ayer</p>
+      {showPos || showStorefront ? (
+        <div className="app-card">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold">Tendencia de ventas</h3>
+              <p className="text-sm text-muted">Ultimos 7 dias</p>
+            </div>
           </div>
-          <div className="app-card">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted">No shows</p>
-            <p className="mt-4 text-3xl font-semibold">3</p>
-            <p className="mt-2 text-sm text-muted">Automatiza cobros.</p>
-          </div>
-          <div className="app-card">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted">Satisfaccion</p>
-            <p className="mt-4 text-3xl font-semibold">4.8</p>
-            <p className="mt-2 text-sm text-muted">Feedback consolidado.</p>
-          </div>
+          {salesChartData.length === 0 ? (
+            <p className="mt-4 text-sm text-muted">Sin datos de ventas recientes.</p>
+          ) : (
+            <div className="mt-4 h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={salesChartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="day" stroke="var(--muted)" fontSize={12} />
+                  <YAxis stroke="var(--muted)" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(15, 17, 24, 0.92)',
+                      border: '1px solid rgba(248,250,252,0.12)',
+                      borderRadius: '12px'
+                    }}
+                  />
+                  <Line type="monotone" dataKey="sales" stroke="var(--primary)" strokeWidth={3} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       ) : null}
 

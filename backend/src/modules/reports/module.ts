@@ -6,58 +6,50 @@ export function createReportsModule({
   usersRepository,
   servicesRepository,
   appointmentsRepository,
+  inventoryRepository,
   authenticateJwt: authMiddleware,
   requireRoles: requireRolesMiddleware
 }: {
   usersRepository: { list(tenantId: string, role?: string): Promise<Array<{ id: string; role: string; name?: string; commissionRate?: number }>> };
   servicesRepository: { list(tenantId: string, options?: { onlyActive?: boolean }): Promise<Array<{ id: string; price?: number }>> };
   appointmentsRepository: { list(tenantId: string, filters?: { clientId?: string; staffId?: string }): Promise<Array<{ id: string; status: string; clientId: string; staffId: string; serviceId: string; startAt: string }>> };
+  inventoryRepository: { list(tenantId: string): Promise<Array<{ id: string }>> };
   authenticateJwt: ReturnType<typeof authenticateJwt>;
   requireRoles: typeof requireRoles;
 }) {
   const getSummary = async (tenantId: string) => {
-    const [users, services, appointments] = await Promise.all([
+    const [users, services, appointments, products] = await Promise.all([
       usersRepository.list(tenantId),
       servicesRepository.list(tenantId),
-      appointmentsRepository.list(tenantId)
+      appointmentsRepository.list(tenantId),
+      inventoryRepository.list(tenantId)
     ]);
 
-    const byStatus = appointments.reduce<Record<string, number>>((acc, appointment) => {
-      acc[appointment.status] = (acc[appointment.status] || 0) + 1;
-      return acc;
-    }, {});
+    const servicePrices = new Map(services.map((service) => [service.id, Number(service.price || 0)]));
+    const today = new Date();
+    const start = new Date(today);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
 
-    const staffCount = users.filter(u => u.role === 'STAFF').length;
-    const productivity = staffCount > 0 ? +(appointments.length / staffCount).toFixed(1) : 0;
-    
-    // Asumimos un aproximado de 8 citas maximas por staff al dia.
-    const occupancy = staffCount > 0 
-      ? Math.min(100, Math.round((appointments.length / (staffCount * 8)) * 100)) + '%'
-      : '0%';
-
-    const clientCounts: Record<string, number> = {};
-    appointments.forEach(apt => {
-      if (apt.clientId) {
-        clientCounts[apt.clientId] = (clientCounts[apt.clientId] || 0) + 1;
-      }
+    const appointmentsToday = appointments.filter((appointment) => {
+      const startAt = new Date(appointment.startAt);
+      return startAt >= start && startAt < end;
     });
-    
-    const uniqueClients = Object.keys(clientCounts).length;
-    const returningClients = Object.values(clientCounts).filter(c => c > 1).length;
-    const retention = uniqueClients > 0 ? Math.round((returningClients / uniqueClients) * 100) + '%' : '0%';
+
+    const totalSales = appointments
+      .filter((appointment) => appointment.status === 'COMPLETADA')
+      .reduce((sum, appointment) => sum + (servicePrices.get(appointment.serviceId) || 0), 0);
+
+    const activeStaff = users.filter((user) => user.role === 'STAFF').length;
 
     return {
-      totals: {
-        users: users.length,
-        services: services.length,
-        appointments: appointments.length
-      },
-      appointmentsByStatus: byStatus,
-      analytics: {
-        productivity: `${productivity} citas / staff`,
-        occupancy,
-        retention
-      }
+      totalSales: Number(totalSales.toFixed(2)),
+      appointmentsToday: appointmentsToday.length,
+      totalProducts: products.length,
+      activeStaff,
+      // TODO: calcular ventas reales por dia cuando exista coleccion de ventas.
+      salesTrend: [120, 300, 150, 400, 200, 500, 450]
     };
   };
 

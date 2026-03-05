@@ -143,6 +143,7 @@ export function createApp({
     usersRepository,
     servicesRepository,
     appointmentsRepository,
+    inventoryRepository,
     authenticateJwt: authMiddleware,
     requireRoles
   });

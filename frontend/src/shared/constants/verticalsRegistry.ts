@@ -4,6 +4,12 @@ export type VerticalConfig = {
   slug: string;
   name: string;
   activeModules: AppModule[];
+  theme?: {
+    background: string;
+    text: string;
+    primary: string;
+    secondary: string;
+  };
   labels: {
     staff: string;
     service: string;
@@ -16,6 +22,12 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
     slug: 'barberias',
     name: 'Barberias',
     activeModules: ['agenda', 'staff', 'services', 'inventory', 'pos', 'commissions'],
+    theme: {
+      background: '#1E1E1E',
+      text: '#F5F5F5',
+      primary: '#C5A267',
+      secondary: '#8B5A2B'
+    },
     labels: { staff: 'Barbero', service: 'Servicio' }
   },
   {
@@ -46,6 +58,12 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
     slug: 'restaurantes',
     name: 'Restaurantes',
     activeModules: ['tables', 'pos', 'inventory', 'kitchen_display', 'digital_menu', 'staff'],
+    theme: {
+      background: '#2A1B12',
+      text: '#FFF4E6',
+      primary: '#E06B2D',
+      secondary: '#F3A76B'
+    },
     labels: { staff: 'Mesero', service: 'Plato' }
   },
   {
@@ -94,6 +112,12 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
     slug: 'clinicas',
     name: 'Clinicas',
     activeModules: ['agenda', 'staff', 'services', 'inventory', 'pos'],
+    theme: {
+      background: '#F7FAFF',
+      text: '#0B1E3B',
+      primary: '#2F6BFF',
+      secondary: '#8FB6FF'
+    },
     labels: { staff: 'Medico', service: 'Consulta' }
   },
   {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTenant } from '../../shared/context/TenantContext';
 import { apiRequest } from '../../shared/infrastructure/http/apiClient';
 import { useLabels } from '../../shared/hooks/useLabels';
@@ -50,6 +51,8 @@ export function BookingEnginePage() {
   const isBarbershop = (tenant?.verticalSlug || '').toLowerCase() === 'barberias';
   const hasStaff = activeModules.includes('staff');
   const hasAgenda = activeModules.includes('agenda');
+  const hasStorefront = activeModules.includes('ecommerce_storefront');
+  const showCrossNav = hasAgenda && hasStorefront;
 
   const steps = useMemo(() => {
     const list = [labels.service];
@@ -131,7 +134,7 @@ export function BookingEnginePage() {
   const goBack = () => setStepIndex((prev) => Math.max(prev - 1, 0));
 
   return (
-    <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+    <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] bg-app text-app-text p-6 rounded-3xl">
       <div className="app-card">
         <div className="flex flex-wrap items-center gap-3">
           {tenant?.logoUrl ? (
@@ -147,6 +150,20 @@ export function BookingEnginePage() {
             <p className="mt-2 text-sm text-muted">Completa el flujo en menos de un minuto.</p>
           </div>
         </div>
+
+        {showCrossNav ? (
+          <div className="mt-4 flex items-center justify-center">
+            <div className="flex rounded-full border border-outline bg-black/20 p-1">
+              <Link
+                className="rounded-full px-4 py-2 text-sm text-muted hover:text-ink"
+                to="/storefront"
+              >
+                Tienda
+              </Link>
+              <span className="rounded-full px-4 py-2 text-sm font-semibold text-primary">Reservas</span>
+            </div>
+          </div>
+        ) : null}
 
         {error ? <p className="mt-4 text-sm text-secondary">{error}</p> : null}
 
