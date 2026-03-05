@@ -2,6 +2,7 @@ import { Router } from 'express';
 import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
+import sharp from 'sharp';
 import type { authenticateJwt } from '../shared/interfaces/http/middlewares/authenticateJwt';
 import type { requireRoles } from '../shared/interfaces/http/middlewares/requireRoles';
 
@@ -20,24 +21,8 @@ export function createUploadRoutes({
 }) {
   const router = Router();
 
-  const storage = multer.diskStorage({
-    destination: (req, _file, cb) => {
-      const tenantId = req.auth?.tenantId;
-      if (!tenantId) {
-        return cb(new Error('No tenantId'), '');
-      }
-      const target = path.join(process.cwd(), 'uploads', tenantId);
-      fs.mkdirSync(target, { recursive: true });
-      cb(null, target);
-    },
-    filename: (_req, file, cb) => {
-      const safe = sanitizeFilename(file.originalname || 'image');
-      cb(null, `${Date.now()}-${safe}`);
-    }
-  });
-
   const upload = multer({
-    storage,
+    storage: multer.memoryStorage(),
     fileFilter: (_req, file, cb) => {
       if (!allowedMime.has(file.mimetype)) {
         return cb(new Error('Tipo de archivo no permitido'));
@@ -47,7 +32,7 @@ export function createUploadRoutes({
     limits: { fileSize: 5 * 1024 * 1024 }
   });
 
-  router.post('/', authMiddleware, requireRolesMiddleware('ADMIN'), upload.single('file'), (req, res) => {
+  router.post('/', authMiddleware, requireRolesMiddleware('ADMIN'), upload.single('file'), async (req, res) => {
     const tenantId = req.auth?.tenantId;
     if (!tenantId) {
       return res.status(403).json({ message: 'No tenantId' });
@@ -56,9 +41,25 @@ export function createUploadRoutes({
       return res.status(400).json({ message: 'Archivo requerido' });
     }
 
+    const target = path.join(process.cwd(), 'uploads', tenantId);
+    fs.mkdirSync(target, { recursive: true });
+    const safe = sanitizeFilename(req.file.originalname || 'image');
+    const filename = `${Date.now()}-${safe}.webp`;
+    const filepath = path.join(target, filename);
+
+    try {
+      await sharp(req.file.buffer)
+        .rotate()
+        .resize({ width: 1200, withoutEnlargement: true })
+        .webp({ quality: 82 })
+        .toFile(filepath);
+    } catch (error) {
+      return res.status(500).json({ message: 'No se pudo procesar la imagen' });
+    }
+
     const host = req.get('host');
     const protocol = req.protocol;
-    const url = `${protocol}://${host}/uploads/${tenantId}/${req.file.filename}`;
+    const url = `${protocol}://${host}/uploads/${tenantId}/${filename}`;
 
     return res.status(201).json({ url });
   });

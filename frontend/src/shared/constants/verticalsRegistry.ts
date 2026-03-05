@@ -34,8 +34,8 @@ export const VERTICALS_REGISTRY: VerticalConfig[] = [
     theme: {
       background: '#1E1E1E',
       text: '#F5F5F5',
-      primary: '#C5A267',
-      secondary: '#8B5A2B'
+      primary: '#00F0FF',
+      secondary: '#8A2BE2'
     },
     labels: { staff: 'Barbero', service: 'Servicio' }
   },

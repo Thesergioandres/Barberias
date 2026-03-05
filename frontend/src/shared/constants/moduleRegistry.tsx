@@ -1,15 +1,16 @@
-import type { ReactElement } from 'react';
-import { AdminAgendaPage } from '../../modules/admin/pages/AdminAgendaPage';
+import { lazy, type ReactElement } from 'react';
 import { AdminTeamPage } from '../../modules/admin/pages/AdminTeamPage';
 import { AdminBranchesPage } from '../../modules/admin/pages/AdminBranchesPage';
 import { AdminWhatsAppPage } from '../../modules/admin/pages/AdminWhatsAppPage';
-import { AdminInventoryPage } from '../../modules/admin/pages/AdminInventoryPage';
 import { AdminReportsPage } from '../../modules/admin/pages/AdminReportsPage';
 import { AdminServicesPage } from '../../modules/admin/presentation/pages/AdminServicesPage';
-import { AdminPOSPage } from '../../modules/admin/pages/AdminPOSPage';
 import { StaffDashboardPage } from '../../modules/staff/presentation/pages/StaffDashboardPage';
 import { ModulePlaceholder } from '../components/ModulePlaceholder';
 import type { AppModule } from '../types/appModules';
+
+const AdminAgendaPage = lazy(() => import('../../modules/admin/pages/AdminAgendaPage').then((m) => ({ default: m.AdminAgendaPage })));
+const AdminInventoryPage = lazy(() => import('../../modules/admin/pages/AdminInventoryPage').then((m) => ({ default: m.AdminInventoryPage })));
+const AdminPOSPage = lazy(() => import('../../modules/admin/pages/AdminPOSPage').then((m) => ({ default: m.AdminPOSPage })));
 
 export type ModuleKey = Extract<
   AppModule,

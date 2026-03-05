@@ -34,11 +34,27 @@ export const getBusinessStatus = (hours?: BusinessHour[] | null, now: Date = new
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const byDay = new Map(hours.map((entry) => [entry.day, entry]));
   const today = byDay.get(todayIndex);
+  const yesterdayIndex = (todayIndex + 6) % 7;
+  const yesterday = byDay.get(yesterdayIndex);
+
+  if (yesterday?.isOpen) {
+    const openMinutes = toMinutes(yesterday.openTime);
+    const closeMinutes = toMinutes(yesterday.closeTime);
+    const isOvernight = closeMinutes <= openMinutes;
+    if (isOvernight && currentMinutes < closeMinutes) {
+      return { isOpen: true, nextOpenLabel: '' };
+    }
+  }
 
   if (today?.isOpen) {
     const openMinutes = toMinutes(today.openTime);
     const closeMinutes = toMinutes(today.closeTime);
-    if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
+    const isOvernight = closeMinutes <= openMinutes;
+    if (!isOvernight && currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
+      return { isOpen: true, nextOpenLabel: '' };
+    }
+
+    if (isOvernight && currentMinutes >= openMinutes) {
       return { isOpen: true, nextOpenLabel: '' };
     }
 

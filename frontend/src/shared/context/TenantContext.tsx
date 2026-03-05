@@ -43,17 +43,21 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement;
     const fallbackPrimary = '#00F0FF';
     const fallbackSecondary = '#8A2BE2';
-    const primary = nextTenant?.primaryColor
-      || nextTenant?.customColors?.primary
-      || fallbackPrimary;
-    const secondary = nextTenant?.secondaryColor
-      || nextTenant?.customColors?.secondary
-      || fallbackSecondary;
+    const rawPrimary = nextTenant?.primaryColor || nextTenant?.customColors?.primary || fallbackPrimary;
+    const rawSecondary = nextTenant?.secondaryColor || nextTenant?.customColors?.secondary || fallbackSecondary;
+    const isValidColor = (value: string) => {
+      if (typeof CSS !== 'undefined' && typeof CSS.supports === 'function') {
+        return CSS.supports('color', value);
+      }
+      return /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value);
+    };
+    const primary = isValidColor(rawPrimary) ? rawPrimary : fallbackPrimary;
+    const secondary = isValidColor(rawSecondary) ? rawSecondary : fallbackSecondary;
 
     root.style.setProperty('--primary', primary);
     root.style.setProperty('--secondary', secondary);
-    root.style.setProperty('--glow-primary', `${primary}73`);
-    root.style.setProperty('--glow-secondary', `${secondary}73`);
+    root.style.setProperty('--glow-primary', isValidColor(`${primary}73`) ? `${primary}73` : 'rgba(0, 240, 255, 0.45)');
+    root.style.setProperty('--glow-secondary', isValidColor(`${secondary}73`) ? `${secondary}73` : 'rgba(138, 43, 226, 0.45)');
   }, []);
 
   const applyBranding = useCallback((nextTenant: TenantRecord | null) => {

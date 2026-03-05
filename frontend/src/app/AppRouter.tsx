@@ -5,7 +5,7 @@ import {
   Route,
   RouterProvider
 } from 'react-router-dom';
-import { useMemo, type ReactElement } from 'react';
+import { Suspense, useMemo, type ReactElement } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../shared/context/AuthContext';
 import { useTenant } from '../shared/context/TenantContext';
@@ -61,6 +61,14 @@ export function AppRouter() {
         return <div className="app-card">Cargando entorno...</div>;
       }
 
+      if (role === 'STAFF') {
+        const blocked = ['settings', 'billing', 'admin-home'];
+        const pathname = location.pathname.toLowerCase();
+        if (blocked.some((segment) => pathname.includes(segment))) {
+          return <Navigate to="/" replace />;
+        }
+      }
+
       if (tenant?.status === 'suspended') {
         return <Navigate to="/license-expired" replace state={{ from: location.pathname }} />;
       }
@@ -81,7 +89,11 @@ export function AppRouter() {
           path: module.adminPath,
           element: (
             <RoleGuard allow={staffAllowed ? ['ADMIN', 'OWNER', 'GOD', 'STAFF'] : ['ADMIN', 'OWNER', 'GOD']}>
-              <ModuleGuard allow={[module.key]}>{module.adminElement}</ModuleGuard>
+              <ModuleGuard allow={[module.key]}>
+                <Suspense fallback={<div className="app-card">Cargando modulo...</div>}>
+                  {module.adminElement}
+                </Suspense>
+              </ModuleGuard>
             </RoleGuard>
           )
         });
@@ -92,7 +104,11 @@ export function AppRouter() {
           path: module.staffPath,
           element: (
             <RoleGuard allow={['STAFF', 'ADMIN', 'OWNER', 'GOD']}>
-              <ModuleGuard allow={[module.key]}>{module.staffElement}</ModuleGuard>
+              <ModuleGuard allow={[module.key]}>
+                <Suspense fallback={<div className="app-card">Cargando modulo...</div>}>
+                  {module.staffElement}
+                </Suspense>
+              </ModuleGuard>
             </RoleGuard>
           )
         });

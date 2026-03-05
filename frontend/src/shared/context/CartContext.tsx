@@ -35,6 +35,7 @@ export function CartProvider({ tenantId, children }: CartProviderProps) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
+  const previousTenantId = useRef<string | null | undefined>(tenantId);
 
   useEffect(() => {
     const storageKey = getStorageKey(tenantId);
@@ -49,6 +50,14 @@ export function CartProvider({ tenantId, children }: CartProviderProps) {
     } else {
       setItems([]);
     }
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (previousTenantId.current !== undefined && previousTenantId.current !== tenantId) {
+      setItems([]);
+      setIsCartOpen(false);
+    }
+    previousTenantId.current = tenantId;
   }, [tenantId]);
 
   useEffect(() => {

@@ -12,6 +12,19 @@ export function requireRoles(...allowedRoles: UserRole[]) {
       return next();
     }
 
+    const tenantId = req.auth?.tenantId;
+    const paramTenantId = typeof req.params.tenantId === 'string' ? req.params.tenantId : undefined;
+    const queryTenantId = typeof req.query.tenantId === 'string' ? req.query.tenantId : undefined;
+    const bodyTenantId = typeof req.body?.tenantId === 'string' ? req.body.tenantId : undefined;
+    const baseTenantId = req.baseUrl.includes('/tenants') && typeof req.params.id === 'string'
+      ? req.params.id
+      : undefined;
+    const resourceTenantId = paramTenantId || queryTenantId || bodyTenantId || baseTenantId;
+
+    if (tenantId && resourceTenantId && tenantId !== resourceTenantId) {
+      return res.status(403).json({ message: 'No autorizado para este tenant' });
+    }
+
     if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({ message: 'No autorizado para esta acción' });
     }

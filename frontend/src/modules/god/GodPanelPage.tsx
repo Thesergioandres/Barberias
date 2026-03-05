@@ -157,7 +157,7 @@ export function GodPanelPage() {
                     borderRadius: '12px'
                   }}
                 />
-                <Bar dataKey="tenants" fill="#f4b41a" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="tenants" fill="var(--primary)" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -169,11 +169,11 @@ export function GodPanelPage() {
           <div className="mt-6 flex items-center justify-center">
             <svg className="w-full max-w-sm" viewBox="0 0 240 200" fill="none">
               <rect x="10" y="10" width="220" height="180" rx="24" fill="rgba(255,255,255,0.04)" stroke="rgba(248,250,252,0.12)" />
-              <circle cx="110" cy="70" r="12" fill="#f4b41a" />
-              <circle cx="150" cy="90" r="8" fill="#f9d784" />
-              <circle cx="90" cy="110" r="10" fill="#f4b41a" />
-              <circle cx="130" cy="130" r="6" fill="#f9d784" />
-              <circle cx="70" cy="140" r="7" fill="#f4b41a" />
+              <circle cx="110" cy="70" r="12" fill="var(--primary)" />
+              <circle cx="150" cy="90" r="8" fill="var(--secondary)" />
+              <circle cx="90" cy="110" r="10" fill="var(--primary)" />
+              <circle cx="130" cy="130" r="6" fill="var(--secondary)" />
+              <circle cx="70" cy="140" r="7" fill="var(--primary)" />
             </svg>
           </div>
           <div className="mt-4 grid gap-2 text-sm text-muted">

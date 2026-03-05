@@ -14,6 +14,18 @@ export function RoleGuard({ allow, children }: { allow: Array<'GOD' | 'OWNER' | 
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
+  if (!user.role) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (user.role === 'STAFF') {
+    const blocked = ['settings', 'billing', 'admin-home'];
+    const pathname = location.pathname.toLowerCase();
+    if (blocked.some((segment) => pathname.includes(segment))) {
+      return <Navigate to="/" replace />;
+    }
+  }
+
   if (!allow.includes(user.role)) {
     return <Navigate to="/login" replace />;
   }

@@ -289,8 +289,8 @@ export function AdminReportsPage() {
                             borderRadius: '12px'
                           }}
                         />
-                        <Line type="monotone" dataKey="grossRevenue" stroke="#f4b41a" strokeWidth={2} dot={false} />
-                        <Line type="monotone" dataKey="netRevenue" stroke="#f9d784" strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="grossRevenue" stroke="var(--primary)" strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="netRevenue" stroke="var(--secondary)" strokeWidth={2} dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
