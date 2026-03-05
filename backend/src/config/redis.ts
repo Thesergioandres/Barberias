@@ -16,7 +16,9 @@ export const redisConnectionOptions = {
 export const redis = new IORedis(env.redisUrl, {
   maxRetriesPerRequest: null,
   lazyConnect: true,
-  enableOfflineQueue: false
+  enableOfflineQueue: false,
+  // En desarrollo con jobs deshabilitados no intentar reconectar
+  retryStrategy: env.enableJobs ? undefined : () => null
 });
 
 redis.on('error', () => {

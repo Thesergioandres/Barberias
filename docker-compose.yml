@@ -13,7 +13,7 @@ services:
     build:
       context: ./frontend
     environment:
-      - VITE_API_BASE_URL=http://localhost/api
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost/api}
 
   backend:
     build:
@@ -21,12 +21,13 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
-      - MONGODB_URI=mongodb://mongo:27017/barberia
-      - REDIS_URL=redis://redis:6379
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/barberia}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - ENABLE_JOBS=true
-      - WHATSAPP_PROVIDER=mock
-      - JWT_SECRET=change-me-in-production
-      - JWT_EXPIRES_IN=1d
+      - WHATSAPP_PROVIDER=${WHATSAPP_PROVIDER:-mock}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET es obligatorio. Copia .env.example como .env y define un secreto seguro}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1d}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
     depends_on:
       - mongo
       - redis
@@ -54,6 +55,8 @@ services:
       - "8081:8081"
     environment:
       - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_BASICAUTH_USERNAME=${ME_CONFIG_BASICAUTH_USERNAME:-admin}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${ME_CONFIG_BASICAUTH_PASSWORD:?ME_CONFIG_BASICAUTH_PASSWORD es obligatorio}
     depends_on:
       - mongo
 

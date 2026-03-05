@@ -1,3 +1,4 @@
+
 # Barbería Fullstack - Plataforma de Gestión (Producción)
 
 Plataforma completa para la gestión integral de una barbería y sector de cuidado personal. Incluye agenda, notificaciones enviadas por WhatsApp, gestión de servicios, y paneles administrativos basados en roles (RBAC).
