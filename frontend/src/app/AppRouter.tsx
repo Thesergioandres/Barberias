@@ -10,6 +10,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../shared/context/AuthContext';
 import { useTenant } from '../shared/context/TenantContext';
 import { LoginCard } from '../shared/components/LoginCard';
+import { EssencePulseLoader } from '../shared/components/EssencePulseLoader';
 import { RoleGuard } from '../shared/components/RoleGuard';
 import { ModuleGuard } from '../shared/components/ModuleGuard';
 import { moduleRegistry } from '../shared/constants/moduleRegistry';
@@ -30,6 +31,9 @@ const TenantLandingSwitch = lazy(() => import('../modules/client/TenantLandingSw
 const LandingPage = lazy(() => import('../modules/landing/LandingPage').then((mod) => ({
   default: mod.LandingPage
 })));
+const AllIndustriesPage = lazy(() => import('../modules/landing/AllIndustriesPage').then((mod) => ({
+  default: mod.AllIndustriesPage
+})));
 const BarberiasLandingPage = lazy(() => import('../modules/landing/BarberiasLandingPage').then((mod) => ({
   default: mod.BarberiasLandingPage
 })));
@@ -45,8 +49,20 @@ const BarbershopLandingPage = lazy(() => import('../modules/landing/presentation
 const AdminHomePage = lazy(() => import('../modules/admin/pages/AdminHomePage').then((mod) => ({
   default: mod.AdminHomePage
 })));
-const GodPanelPage = lazy(() => import('../modules/god/GodPanelPage').then((mod) => ({
-  default: mod.GodPanelPage
+const AdminTenantsPage = lazy(() => import('../modules/admin/presentation/pages/AdminTenantsPage').then((mod) => ({
+  default: mod.AdminTenantsPage
+})));
+const AdminUsersPage = lazy(() => import('../modules/admin/presentation/pages/AdminUsersPage').then((mod) => ({
+  default: mod.AdminUsersPage
+})));
+const AdminApprovalsPage = lazy(() => import('../modules/admin/presentation/pages/AdminApprovalsPage').then((mod) => ({
+  default: mod.AdminApprovalsPage
+})));
+const AdminSystemPage = lazy(() => import('../modules/admin/pages/AdminSystemPage').then((mod) => ({
+  default: mod.AdminSystemPage
+})));
+const GodDashboardPage = lazy(() => import('../modules/god/GodDashboardPage').then((mod) => ({
+  default: mod.GodDashboardPage
 })));
 const LicenseExpiredPage = lazy(() => import('../modules/admin/presentation/pages/LicenseExpiredPage').then((mod) => ({
   default: mod.LicenseExpiredPage
@@ -56,6 +72,24 @@ const OnboardingPendingPage = lazy(() => import('../modules/admin/presentation/p
 })));
 const CreateTenantPage = lazy(() => import('../modules/onboarding/CreateTenantPage').then((mod) => ({
   default: mod.CreateTenantPage
+})));
+const TermsAndConditions = lazy(() => import('../modules/legal/pages/TermsAndConditions').then((mod) => ({
+  default: mod.TermsAndConditions
+})));
+const PrivacyPolicy = lazy(() => import('../modules/legal/pages/PrivacyPolicy').then((mod) => ({
+  default: mod.PrivacyPolicy
+})));
+const DataTreatmentPolicy = lazy(() => import('../modules/legal/pages/DataTreatmentPolicy').then((mod) => ({
+  default: mod.DataTreatmentPolicy
+})));
+const CookiePolicy = lazy(() => import('../modules/legal/pages/CookiePolicy').then((mod) => ({
+  default: mod.CookiePolicy
+})));
+const SaaSAgreement = lazy(() => import('../modules/legal/pages/SaaSAgreement').then((mod) => ({
+  default: mod.SaaSAgreement
+})));
+const DataProcessingAgreement = lazy(() => import('../modules/legal/pages/DataProcessingAgreement').then((mod) => ({
+  default: mod.DataProcessingAgreement
 })));
 const AppLayout = lazy(() => import('../shared/layouts/AppLayout').then((mod) => ({
   default: mod.AppLayout
@@ -81,7 +115,8 @@ const RouteLoader = () => (
 
 export function AppRouter() {
   const { user } = useAuth();
-  const hostContext = resolveHostContext(window.location.hostname);
+  const hostContext = resolveHostContext(window.location.hostname, window.location.pathname);
+  const isGod = user?.role === 'GOD';
   const defaultAppPath = user
     ? user.role === 'GOD'
       ? '/god'
@@ -128,6 +163,9 @@ export function AppRouter() {
     };
     const staffAllowedModules = new Set(['agenda', 'inventory', 'pos', 'tables']);
     const moduleRoutes = Object.values(moduleRegistry).flatMap((module) => {
+      if (isGod) {
+        return [];
+      }
       const staffAllowed = staffAllowedModules.has(module.key);
       const routes: Array<{ key: string; path: string; element: ReactElement }> = [];
       if (module.adminPath && module.adminElement) {
@@ -191,11 +229,13 @@ export function AppRouter() {
     const appRoutes = createRoutesFromElements(
       <>
         <Route path="/login" element={
-          <LoginCard
-            title="Acceso"
-            subtitle="Usa tu cuenta para gestionar la plataforma."
-            allowedRoles={['ADMIN', 'OWNER', 'STAFF', 'GOD']}
-          />
+          <div className="app-container flex min-h-[70vh] items-center justify-center py-12">
+            <LoginCard
+              title="Acceso"
+              subtitle="Usa tu cuenta para gestionar la plataforma."
+              allowedRoles={['ADMIN', 'OWNER', 'STAFF', 'GOD']}
+            />
+          </div>
         } />
         <Route path="/waiting" element={
           <Suspense fallback={<RouteLoader />}>
@@ -226,6 +266,46 @@ export function AppRouter() {
             }
           />
           <Route
+            path="/admin/tenants"
+            element={
+              <RoleGuard allow={['GOD']}>
+                <Suspense fallback={<RouteLoader />}>
+                  <AdminTenantsPage />
+                </Suspense>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <RoleGuard allow={['GOD']}>
+                <Suspense fallback={<RouteLoader />}>
+                  <AdminUsersPage />
+                </Suspense>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/approvals"
+            element={
+              <RoleGuard allow={['GOD']}>
+                <Suspense fallback={<RouteLoader />}>
+                  <AdminApprovalsPage />
+                </Suspense>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/admin/system"
+            element={
+              <RoleGuard allow={['GOD']}>
+                <Suspense fallback={<RouteLoader />}>
+                  <AdminSystemPage />
+                </Suspense>
+              </RoleGuard>
+            }
+          />
+          <Route
             path="/staff"
             element={<Navigate to="/staff/dashboard" replace />}
           />
@@ -237,7 +317,7 @@ export function AppRouter() {
             element={
               <RoleGuard allow={['GOD']}>
                 <Suspense fallback={<RouteLoader />}>
-                  <GodPanelPage />
+                  <GodDashboardPage />
                 </Suspense>
               </RoleGuard>
             }
@@ -253,6 +333,36 @@ export function AppRouter() {
             <OnboardingPendingPage />
           </Suspense>
         } />
+        <Route path="/legal/terms" element={
+          <Suspense fallback={<RouteLoader />}>
+            <TermsAndConditions />
+          </Suspense>
+        } />
+        <Route path="/legal/privacy" element={
+          <Suspense fallback={<RouteLoader />}>
+            <PrivacyPolicy />
+          </Suspense>
+        } />
+        <Route path="/legal/ptd" element={
+          <Suspense fallback={<RouteLoader />}>
+            <DataTreatmentPolicy />
+          </Suspense>
+        } />
+        <Route path="/legal/cookies" element={
+          <Suspense fallback={<RouteLoader />}>
+            <CookiePolicy />
+          </Suspense>
+        } />
+        <Route path="/legal/saas" element={
+          <Suspense fallback={<RouteLoader />}>
+            <SaaSAgreement />
+          </Suspense>
+        } />
+        <Route path="/legal/dpa" element={
+          <Suspense fallback={<RouteLoader />}>
+            <DataProcessingAgreement />
+          </Suspense>
+        } />
         <Route path="*" element={<Navigate to={defaultAppPath} replace />} />
       </>
     );
@@ -266,6 +376,11 @@ export function AppRouter() {
         <Route index element={
           <Suspense fallback={<RouteLoader />}>
             <LandingPage />
+          </Suspense>
+        } />
+        <Route path="/industries" element={
+          <Suspense fallback={<RouteLoader />}>
+            <AllIndustriesPage />
           </Suspense>
         } />
         <Route path="/landing/:slug" element={
@@ -318,6 +433,36 @@ export function AppRouter() {
             <CreateTenantPage />
           </Suspense>
         } />
+        <Route path="/legal/terms" element={
+          <Suspense fallback={<RouteLoader />}>
+            <TermsAndConditions />
+          </Suspense>
+        } />
+        <Route path="/legal/privacy" element={
+          <Suspense fallback={<RouteLoader />}>
+            <PrivacyPolicy />
+          </Suspense>
+        } />
+        <Route path="/legal/ptd" element={
+          <Suspense fallback={<RouteLoader />}>
+            <DataTreatmentPolicy />
+          </Suspense>
+        } />
+        <Route path="/legal/cookies" element={
+          <Suspense fallback={<RouteLoader />}>
+            <CookiePolicy />
+          </Suspense>
+        } />
+        <Route path="/legal/saas" element={
+          <Suspense fallback={<RouteLoader />}>
+            <SaaSAgreement />
+          </Suspense>
+        } />
+        <Route path="/legal/dpa" element={
+          <Suspense fallback={<RouteLoader />}>
+            <DataProcessingAgreement />
+          </Suspense>
+        } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     );
@@ -331,7 +476,11 @@ export function AppRouter() {
     }
 
     return createBrowserRouter(landingRoutes);
-  }, [hostContext.mode, defaultAppPath]);
+  }, [hostContext.mode, defaultAppPath, isGod]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <Suspense fallback={<EssencePulseLoader />}>
+      <RouterProvider router={router} />
+    </Suspense>
+  );
 }

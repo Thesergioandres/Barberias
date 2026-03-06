@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../../../shared/infrastructure/http/apiClient';
 import { useAuth } from '../../../../shared/context/AuthContext';
+import { useTenant } from '../../../../shared/context/TenantContext';
 
 type Profile = {
   id: string;
@@ -12,9 +14,13 @@ type Profile = {
 };
 
 export function ProfilePage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { tenant } = useTenant();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -46,6 +52,42 @@ export function ProfilePage() {
       setProfile(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar el perfil');
+    }
+  };
+
+  const handleExport = async () => {
+    setError(null);
+    setExporting(true);
+    try {
+      const payload = await apiRequest('/tenants/me/export');
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `essence-datos-${tenant?.slug || 'tenant'}.json`;
+      anchor.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo exportar la informacion');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Esta accion eliminara o anonimiza los datos del tenant. Deseas continuar?')) {
+      return;
+    }
+    setError(null);
+    setDeleting(true);
+    try {
+      await apiRequest('/tenants/me/delete', { method: 'POST' });
+      logout();
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo procesar la solicitud');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -97,6 +139,23 @@ export function ProfilePage() {
             Guardar cambios
           </button>
         </form>
+      ) : null}
+
+      {(user?.role === 'ADMIN' || user?.role === 'OWNER') ? (
+        <div className="app-card space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold">Derechos ARCO</h3>
+            <p className="text-sm text-muted">Descarga o elimina los datos asociados a tu tenant.</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button className="btn-secondary" type="button" onClick={handleExport} disabled={exporting}>
+              {exporting ? 'Generando exportacion...' : 'Descargar mis datos'}
+            </button>
+            <button className="btn-primary" type="button" onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Procesando eliminacion...' : 'Eliminar mi cuenta y datos'}
+            </button>
+          </div>
+        </div>
       ) : null}
     </section>
   );

@@ -29,6 +29,12 @@ export type Env = {
   vapidPublicKey?: string;
   vapidPrivateKey?: string;
   vapidSubject?: string;
+  mercadoPagoAccessToken?: string;
+  mercadoPagoWebhookUrl?: string;
+  mercadoPagoSuccessUrl?: string;
+  mercadoPagoFailureUrl?: string;
+  mercadoPagoPendingUrl?: string;
+  mercadoPagoCurrency?: string;
 };
 
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -62,5 +68,11 @@ export const env: Env = {
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY,
-  vapidSubject: process.env.VAPID_SUBJECT
+  vapidSubject: process.env.VAPID_SUBJECT,
+  mercadoPagoAccessToken: process.env.MP_ACCESS_TOKEN,
+  mercadoPagoWebhookUrl: process.env.MP_WEBHOOK_URL,
+  mercadoPagoSuccessUrl: process.env.MP_SUCCESS_URL,
+  mercadoPagoFailureUrl: process.env.MP_FAILURE_URL,
+  mercadoPagoPendingUrl: process.env.MP_PENDING_URL,
+  mercadoPagoCurrency: process.env.MP_CURRENCY || 'COP'
 };

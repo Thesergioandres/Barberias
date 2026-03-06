@@ -11,6 +11,15 @@ type TenantProps = {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  legalConsent?: {
+    acceptedAt?: string;
+    termsVersion?: string;
+    privacyVersion?: string;
+    dataTreatmentVersion?: string;
+    cookiesVersion?: string;
+    dpaVersion?: string;
+    saasVersion?: string;
+  };
   businessHours?: Array<{
     day: number;
     openTime: string;
@@ -54,6 +63,15 @@ export class Tenant {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  legalConsent?: {
+    acceptedAt?: string;
+    termsVersion?: string;
+    privacyVersion?: string;
+    dataTreatmentVersion?: string;
+    cookiesVersion?: string;
+    dpaVersion?: string;
+    saasVersion?: string;
+  };
   businessHours: Array<{
     day: number;
     openTime: string;
@@ -94,6 +112,7 @@ export class Tenant {
     this.subdomain = props.subdomain;
     this.verticalSlug = props.verticalSlug;
     this.activeModules = props.activeModules;
+    this.legalConsent = props.legalConsent;
     this.businessHours = props.businessHours ?? [
       { day: 0, openTime: '09:00', closeTime: '18:00', isOpen: true },
       { day: 1, openTime: '09:00', closeTime: '18:00', isOpen: true },

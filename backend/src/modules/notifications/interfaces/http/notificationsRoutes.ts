@@ -13,6 +13,8 @@ export function createNotificationsRoutes({
   requireRoles: typeof requireRoles;
 }) {
   const router = Router();
+  let lastMetaWebhookAt: number | null = null;
+  const healthWindowMs = 5 * 60 * 1000;
 
   router.get('/logs', authMiddleware, requireRolesMiddleware('ADMIN'), async (req: Request, res: Response) => {
     const tenantId = req.auth?.tenantId;
@@ -30,6 +32,19 @@ export function createNotificationsRoutes({
       ? database.whatsappLogs
       : database.whatsappLogs.filter((log) => (log as { tenantId?: string }).tenantId === tenantId);
     return res.json(logs);
+  });
+
+  router.post('/webhook/meta/health', (req: Request, res: Response) => {
+    lastMetaWebhookAt = Date.now();
+    return res.json({ status: 'ok' });
+  });
+
+  router.get('/health', authMiddleware, requireRolesMiddleware('GOD'), (_req: Request, res: Response) => {
+    const online = lastMetaWebhookAt ? Date.now() - lastMetaWebhookAt <= healthWindowMs : false;
+    return res.json({
+      status: online ? 'online' : 'offline',
+      lastWebhookAt: lastMetaWebhookAt ? new Date(lastMetaWebhookAt).toISOString() : null
+    });
   });
 
   router.get('/config', authMiddleware, requireRolesMiddleware('ADMIN'), (_req: Request, res: Response) => {

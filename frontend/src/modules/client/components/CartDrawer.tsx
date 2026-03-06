@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type MouseEvent } from 'react';
 import { useCart } from '../../../shared/context/CartContext';
 import { useTenant } from '../../../shared/context/TenantContext';
 import { getBusinessStatus } from '../../../shared/utils/businessHours';
+import { EssenceMiniLoader } from '../../../shared/components/EssenceMiniLoader';
 
 type CartDrawerProps = {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export function CartDrawer({ isOpen, onClose, tenantPhone }: CartDrawerProps) {
   const phone = formatPhone(tenantPhone);
   const [deliveryMode, setDeliveryMode] = useState<'pickup' | 'delivery'>('pickup');
   const [address, setAddress] = useState('');
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const { isOpen: isBusinessOpen, nextOpenLabel } = getBusinessStatus(tenant?.businessHours);
   const isCheckoutDisabled = items.length === 0 || !phone || !isBusinessOpen;
 
@@ -37,6 +39,15 @@ export function CartDrawer({ isOpen, onClose, tenantPhone }: CartDrawerProps) {
   const whatsappLink = phone
     ? `https://wa.me/${phone}?text=${encodeURIComponent(orderMessage)}`
     : '';
+
+  const handleCheckout = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (isCheckoutDisabled || isCheckoutLoading) {
+      event.preventDefault();
+      return;
+    }
+    setIsCheckoutLoading(true);
+    window.setTimeout(() => setIsCheckoutLoading(false), 900);
+  };
 
   if (!isOpen) return null;
 
@@ -118,18 +129,20 @@ export function CartDrawer({ isOpen, onClose, tenantPhone }: CartDrawerProps) {
               Vaciar
             </button>
             <a
-              className="btn-primary"
+              className={`btn-primary relative ${isCheckoutDisabled || isCheckoutLoading ? 'pointer-events-none' : ''}`}
               href={whatsappLink}
               target="_blank"
               rel="noreferrer"
-              aria-disabled={isCheckoutDisabled}
-              onClick={(event) => {
-                if (isCheckoutDisabled) {
-                  event.preventDefault();
-                }
-              }}
+              aria-disabled={isCheckoutDisabled || isCheckoutLoading}
+              onClick={handleCheckout}
+              style={isCheckoutLoading ? { filter: 'drop-shadow(0 0 10px rgba(0,240,255,0.35))' } : undefined}
             >
-              Finalizar compra
+              <span className={isCheckoutLoading ? 'opacity-0' : 'opacity-100'}>Finalizar compra</span>
+              {isCheckoutLoading ? (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <EssenceMiniLoader />
+                </span>
+              ) : null}
             </a>
           </div>
           {!isBusinessOpen ? (

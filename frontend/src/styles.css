@@ -19,7 +19,9 @@
 		--bg-app: #0A0F1E;
 		--text-app: #FFFFFF;
 		--primary: #00F0FF;
+		--primary-rgb: 0, 240, 255;
 		--secondary: #8A2BE2;
+		--primary-glow: rgba(0, 240, 255, 0.15);
 		--glow-primary: rgba(0, 240, 255, 0.45);
 		--glow-secondary: rgba(138, 43, 226, 0.45);
 		--surface: #0A0F1E;
@@ -36,16 +38,67 @@
 
 	body {
 		font-family: "Manrope", "Segoe UI", sans-serif;
-		background:
-			radial-gradient(900px 500px at 12% -10%, rgba(0, 240, 255, 0.18), transparent 60%),
-			radial-gradient(1000px 520px at 92% -5%, rgba(138, 43, 226, 0.18), transparent 55%),
-			linear-gradient(180deg, #0A0F1E 0%, #0A0F1E 100%);
+		background: linear-gradient(180deg, #0A0F1E 0%, #060912 70%, #05070E 100%);
+		background-attachment: fixed;
+		background-size: cover;
+		background-repeat: no-repeat;
+		overflow-x: hidden;
 		color: var(--ink);
 		min-height: 100vh;
+		top: 0 !important;
+		margin-top: 0 !important;
+	}
+
+	body::before {
+		content: "";
+		position: fixed;
+		inset: 0;
+		background: radial-gradient(circle at 50% 10%, var(--primary-glow), transparent 60%);
+		z-index: -1;
+		pointer-events: none;
+	}
+
+	html {
+		margin-top: 0 !important;
 	}
 
 	#root {
 		min-height: 100vh;
+	}
+
+	.goog-te-banner-frame,
+	.goog-te-banner-frame.skiptranslate,
+	iframe.goog-te-banner-frame {
+		display: none !important;
+		visibility: hidden !important;
+		height: 0 !important;
+	}
+
+	body > .skiptranslate,
+	.skiptranslate.goog-te-banner-frame {
+		display: none !important;
+		visibility: hidden !important;
+	}
+
+	body.skiptranslate,
+	html.skiptranslate {
+		top: 0 !important;
+	}
+
+	.goog-te-balloon-frame,
+	#goog-gt-tt,
+	.goog-tooltip,
+	.goog-tooltip:hover {
+		display: none !important;
+	}
+
+	.goog-te-gadget-icon {
+		display: none !important;
+	}
+
+	.goog-text-highlight {
+		background: transparent !important;
+		box-shadow: none !important;
 	}
 
 	h1,
@@ -89,6 +142,17 @@
 		@apply rounded-2xl border p-6;
 		border-color: var(--outline);
 		background-color: color-mix(in oklab, var(--panel), transparent 12%);
+	}
+
+
+	.factory-module-card {
+		will-change: transform, opacity;
+		transform: translateZ(0);
+	}
+
+	.industries-container {
+		height: auto;
+		max-height: fit-content;
 	}
 
 	.app-chip {
@@ -268,10 +332,11 @@
 	}
 
 	.brand-logo {
-		@apply h-10 w-10 rounded-2xl;
-		background-color: color-mix(in oklab, var(--panel), transparent 15%);
+		@apply h-10 w-10 rounded-xl;
+		background-color: transparent;
 		background-image: var(--logo-url);
-		background-size: cover;
+		background-size: contain;
+		background-repeat: no-repeat;
 		background-position: center;
 		border: 1px solid var(--outline);
 	}

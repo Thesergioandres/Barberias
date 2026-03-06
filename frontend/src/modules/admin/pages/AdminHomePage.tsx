@@ -6,6 +6,7 @@ import { useAuth } from '../../../shared/context/AuthContext';
 import { useLabels } from '../../../shared/hooks/useLabels';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '../../../shared/infrastructure/http/apiClient';
+import { EssenceMiniLoader } from '../../../shared/components/EssenceMiniLoader';
 import { BusinessHoursSettings } from '../presentation/components/BusinessHoursSettings';
 import { createDefaultBusinessHours, type BusinessHour } from '../../../shared/utils/businessHours';
 const DashboardStats = lazy(() => import('../presentation/components/DashboardStats').then((mod) => ({
@@ -346,8 +347,19 @@ export function AdminHomePage() {
           </label>
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button className="btn-primary" type="button" onClick={handleSaveBrand} disabled={brandSaving}>
-            {brandSaving ? 'Guardando...' : 'Guardar colores'}
+          <button
+            className={`btn-primary relative ${brandSaving ? 'pointer-events-none' : ''}`}
+            type="button"
+            onClick={handleSaveBrand}
+            disabled={brandSaving}
+            style={brandSaving ? { filter: 'drop-shadow(0 0 10px rgba(0,240,255,0.35))' } : undefined}
+          >
+            <span className={brandSaving ? 'opacity-0' : 'opacity-100'}>Guardar colores</span>
+            {brandSaving ? (
+              <span className="absolute inset-0 flex items-center justify-center">
+                <EssenceMiniLoader />
+              </span>
+            ) : null}
           </button>
         </div>
       </div>
@@ -361,8 +373,19 @@ export function AdminHomePage() {
           <BusinessHoursSettings value={businessHours} onChange={setBusinessHours} />
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button className="btn-primary" type="button" onClick={handleSaveHours} disabled={hoursSaving}>
-            {hoursSaving ? 'Guardando...' : 'Guardar cambios'}
+          <button
+            className={`btn-primary relative ${hoursSaving ? 'pointer-events-none' : ''}`}
+            type="button"
+            onClick={handleSaveHours}
+            disabled={hoursSaving}
+            style={hoursSaving ? { filter: 'drop-shadow(0 0 10px rgba(0,240,255,0.35))' } : undefined}
+          >
+            <span className={hoursSaving ? 'opacity-0' : 'opacity-100'}>Guardar cambios</span>
+            {hoursSaving ? (
+              <span className="absolute inset-0 flex items-center justify-center">
+                <EssenceMiniLoader />
+              </span>
+            ) : null}
           </button>
         </div>
       </div>

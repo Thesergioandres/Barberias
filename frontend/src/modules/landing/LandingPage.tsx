@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useGSAP } from '@gsap/react';
+import { gsap } from '../../shared/animations/gsapConfig';
 import { VERTICALS_REGISTRY } from '../../shared/constants/verticalsRegistry';
 import { AboutSection } from './components/AboutSection';
+import { setGoogleTranslateLanguage } from '../../shared/utils/googleTranslate';
+import { EssenceMiniLoader } from '../../shared/components/EssenceMiniLoader';
 
 function setSeo(title: string, description: string) {
   document.title = title;
@@ -16,8 +19,10 @@ function setSeo(title: string, description: string) {
 }
 
 export function LandingPage() {
-  const { t, i18n } = useTranslation();
-  const [activeFilter, setActiveFilter] = useState('Todos');
+  const [isCatalogLoading, setIsCatalogLoading] = useState(false);
+  const [activeLang, setActiveLang] = useState<'es' | 'en' | 'pt' | 'fr' | 'it' | 'de' | 'zh-CN'>('es');
+  const modulesRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setSeo(
@@ -26,21 +31,29 @@ export function LandingPage() {
     );
   }, []);
 
-  const filterOptions = ['Todos', 'Belleza', 'Salud', 'Retail', 'Logistica', 'Profesionales'];
+  useGSAP(
+    () => {
+      const cards = gsap.utils.toArray<HTMLElement>('.factory-module-card');
+      cards.forEach((card) => {
+        gsap.from(card, {
+          opacity: 0,
+          y: 24,
+          duration: 0.6,
+          ease: 'power2.out',
+          force3D: true,
+          clearProps: 'all',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top 80%',
+            once: true
+          }
+        });
+      });
+    },
+    { scope: modulesRef }
+  );
+
   const readySlugs = new Set(['barberias']);
-
-  const categoryForSlug = (slug: string) => {
-    const keywordMap: Record<string, string[]> = {
-      Belleza: ['barberias', 'salones', 'estetica', 'spas', 'depilacion', 'belleza'],
-      Salud: ['clinicas', 'odontologia', 'psicologia', 'veterinarias', 'farmacias', 'opticas', 'salud'],
-      Retail: ['tiendas', 'inventarios', 'ferreterias', 'papelerias', 'regalos', 'floristerias', 'conveniencia'],
-      Logistica: ['logistica', 'transporte', 'envios', 'almacen', 'bodega', 'mensajeria', 'delivery', 'courier'],
-      Profesionales: ['abogados', 'contables', 'consultoria', 'consultorias', 'agencias', 'estudios', 'despachos']
-    };
-
-    const match = Object.entries(keywordMap).find(([, keywords]) => keywords.some((keyword) => slug.includes(keyword)));
-    return match ? match[0] : 'Profesionales';
-  };
 
   const moduleLabelMap: Record<string, string> = {
     agenda: 'Agenda',
@@ -67,12 +80,7 @@ export function LandingPage() {
     return labels.slice(0, 2).join(' + ');
   };
 
-  const filteredVerticals = useMemo(() => {
-    if (activeFilter === 'Todos') {
-      return VERTICALS_REGISTRY;
-    }
-    return VERTICALS_REGISTRY.filter((vertical) => categoryForSlug(vertical.slug) === activeFilter);
-  }, [activeFilter]);
+  const featuredVerticals = useMemo(() => VERTICALS_REGISTRY.slice(0, 8), []);
 
   return (
     <section className="space-y-16 pt-10 md:pt-16">
@@ -80,17 +88,17 @@ export function LandingPage() {
         <div className="app-card p-8 md:p-10">
           <p className="app-chip font-sans tracking-[0.35em]">The factory hub</p>
           <h2 className="mt-6 text-5xl font-semibold leading-tight md:text-6xl">
-            {t('landing.heroTitle')}
+            Lanza tu white-label en dias
           </h2>
           <p className="mt-5 text-sm text-muted">
-            {t('landing.heroSubtitle')}
+            Marca, permisos y rutas por tenant en tiempo real.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link className="btn-primary" to="/barberias-landing">
-              {t('landing.ctaExplore')}
+              Explorar vertical barberias
             </Link>
             <Link className="btn-secondary" to="#quienes-somos">
-              {t('landing.ctaAbout')}
+              Quienes somos
             </Link>
           </div>
         </div>
@@ -113,45 +121,25 @@ export function LandingPage() {
 
       <AboutSection />
 
-      <div className="app-card py-24">
+      <div ref={modulesRef} className="app-card py-24">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h3 className="text-2xl font-semibold">{t('landing.industriesTitle')}</h3>
+            <h3 className="text-2xl font-semibold">Verticales listas para escalar</h3>
             <p className="mt-2 text-sm text-muted">
-              {t('landing.industriesSubtitle')}
+              Modulos listos para operar en multiples industrias con marca propia.
             </p>
           </div>
           <Link className="btn-secondary" to="/barberias-landing">Ver detalle barberias</Link>
         </div>
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          {filterOptions.map((filter) => {
-            const isActive = filter === activeFilter;
-            return (
-              <button
-                key={filter}
-                className={
-                  isActive
-                    ? 'rounded-full border border-[rgba(0,240,255,0.6)] bg-[rgba(0,240,255,0.12)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-primary'
-                    : 'rounded-full border border-[rgba(138,43,226,0.35)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted transition hover:border-[rgba(0,240,255,0.6)] hover:text-primary'
-                }
-                type="button"
-                onClick={() => setActiveFilter(filter)}
-              >
-                {filter}
-              </button>
-            );
-          })}
-        </div>
-
         <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredVerticals.map((vertical) => {
+          {featuredVerticals.map((vertical) => {
             const isReady = readySlugs.has(vertical.slug);
             return (
               <Link
                 key={vertical.slug}
                 to={`/landing/${vertical.slug}`}
-                className="group relative min-h-[190px] rounded-[24px] border border-[rgba(138,43,226,0.35)] bg-[#0b1224] p-6 transition hover:border-[rgba(0,240,255,0.8)]"
+                className="factory-module-card group relative min-h-[190px] rounded-[24px] border border-[rgba(138,43,226,0.35)] bg-[#0b1224] p-6 transition hover:border-[rgba(0,240,255,0.8)]"
               >
                 {isReady ? (
                   <span className="inline-flex items-center rounded-full border border-[rgba(0,240,255,0.5)] px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-primary">
@@ -171,24 +159,101 @@ export function LandingPage() {
             );
           })}
         </div>
+
+        <div className="mt-8 flex justify-center">
+          <button
+            type="button"
+            className={`btn-secondary relative ${isCatalogLoading ? 'pointer-events-none' : ''}`}
+            onClick={() => {
+              if (isCatalogLoading) return;
+              setIsCatalogLoading(true);
+              window.setTimeout(() => navigate('/industries'), 160);
+            }}
+          >
+            <span className={isCatalogLoading ? 'opacity-0' : 'opacity-100'}>
+              Explorar catalogo completo de industrias
+            </span>
+            {isCatalogLoading ? (
+              <span className="absolute inset-0 flex items-center justify-center">
+                <EssenceMiniLoader />
+              </span>
+            ) : null}
+          </button>
+        </div>
       </div>
 
       <footer className="app-card-soft flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs uppercase tracking-[0.3em] text-muted">{t('landing.footerLanguage')}</p>
-        <div className="flex items-center gap-2">
+        <p className="text-xs uppercase tracking-[0.3em] text-muted">Idioma</p>
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            className={`btn-ghost ${i18n.language === 'es' ? 'text-primary' : ''}`}
+            className={`btn-ghost ${activeLang === 'es' ? 'text-primary' : ''}`}
             type="button"
-            onClick={() => i18n.changeLanguage('es')}
+            onClick={() => {
+              setGoogleTranslateLanguage('es');
+              setActiveLang('es');
+            }}
           >
-            ES
+            Espanol
           </button>
           <button
-            className={`btn-ghost ${i18n.language === 'en' ? 'text-primary' : ''}`}
+            className={`btn-ghost ${activeLang === 'en' ? 'text-primary' : ''}`}
             type="button"
-            onClick={() => i18n.changeLanguage('en')}
+            onClick={() => {
+              setGoogleTranslateLanguage('en');
+              setActiveLang('en');
+            }}
           >
-            EN
+            Ingles
+          </button>
+          <button
+            className={`btn-ghost ${activeLang === 'pt' ? 'text-primary' : ''}`}
+            type="button"
+            onClick={() => {
+              setGoogleTranslateLanguage('pt');
+              setActiveLang('pt');
+            }}
+          >
+            Portugues
+          </button>
+          <button
+            className={`btn-ghost ${activeLang === 'fr' ? 'text-primary' : ''}`}
+            type="button"
+            onClick={() => {
+              setGoogleTranslateLanguage('fr');
+              setActiveLang('fr');
+            }}
+          >
+            Frances
+          </button>
+          <button
+            className={`btn-ghost ${activeLang === 'it' ? 'text-primary' : ''}`}
+            type="button"
+            onClick={() => {
+              setGoogleTranslateLanguage('it');
+              setActiveLang('it');
+            }}
+          >
+            Italiano
+          </button>
+          <button
+            className={`btn-ghost ${activeLang === 'de' ? 'text-primary' : ''}`}
+            type="button"
+            onClick={() => {
+              setGoogleTranslateLanguage('de');
+              setActiveLang('de');
+            }}
+          >
+            Aleman
+          </button>
+          <button
+            className={`btn-ghost ${activeLang === 'zh-CN' ? 'text-primary' : ''}`}
+            type="button"
+            onClick={() => {
+              setGoogleTranslateLanguage('zh-CN');
+              setActiveLang('zh-CN');
+            }}
+          >
+            Chino
           </button>
         </div>
       </footer>

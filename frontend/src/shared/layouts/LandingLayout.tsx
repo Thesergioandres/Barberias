@@ -4,12 +4,14 @@ import { TopLoadingBar } from '../components/TopLoadingBar';
 
 export function LandingLayout() {
   return (
-    <div className="app-shell">
+    <div className="app-shell" style={{ ['--logo-url' as string]: 'url("/essence-logo.png")' }}>
       <TopLoadingBar />
       <header className="app-header border-b backdrop-blur">
         <div className="app-container flex flex-wrap items-center justify-between gap-4 py-6">
-          <div className="flex items-center gap-3">
-            <BrandMark />
+          <div className="flex items-center gap-4">
+            <div className="rounded-3xl bg-black/30 p-2 shadow-[0_0_26px_rgba(0,240,255,0.25)]">
+              <BrandMark size={125} />
+            </div>
             <div>
               <p className="app-chip">ESSENCE FACTORY SAAS</p>
               <h1 className="text-3xl font-semibold">Lanza tu white-label en dias</h1>

@@ -18,9 +18,18 @@ export function AppLayout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const staffAllowedModules = new Set(['agenda', 'inventory', 'pos', 'tables']);
 
-  const adminModules = Object.values(moduleRegistry).filter(
-    (module) => module.adminPath && (isGod || isOwner || activeModules.includes(module.key))
-  );
+  const godLinks = [
+    { to: '/god', label: 'Dashboard Global' },
+    { to: '/admin/tenants', label: 'Gestion de Tenants' },
+    { to: '/admin/users', label: 'Usuarios Globales' },
+    { to: '/admin/system', label: 'Configuracion del Sistema' }
+  ];
+
+  const adminModules = isGod
+    ? []
+    : Object.values(moduleRegistry).filter(
+        (module) => module.adminPath && (isOwner || activeModules.includes(module.key))
+      );
   const staffModules = Object.values(moduleRegistry).filter(
     (module) => module.adminPath && staffAllowedModules.has(module.key) && activeModules.includes(module.key)
   );
@@ -63,12 +72,19 @@ export function AppLayout() {
 
       <div className="app-container">
         <nav className="app-nav-surface mt-6 hidden flex-wrap gap-2 lg:flex">
-          {user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'GOD' ? (
+          {isGod
+            ? godLinks.map((link) => (
+                <NavLink key={link.to} className={navLinkClass} to={link.to}>
+                  {link.label}
+                </NavLink>
+              ))
+            : null}
+          {user?.role === 'ADMIN' || user?.role === 'OWNER' ? (
             <NavLink className={navLinkClass} to="/admin">
               Dashboard
             </NavLink>
           ) : null}
-          {(user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'GOD')
+          {user?.role === 'ADMIN' || user?.role === 'OWNER'
             ? adminModules.map((module) => (
                 <NavLink key={module.key} className={navLinkClass} to={module.adminPath as string}>
                   {module.label}
@@ -82,11 +98,6 @@ export function AppLayout() {
                 </NavLink>
               ))
             : null}
-          {user?.role === 'GOD' ? (
-            <NavLink className={navLinkClass} to="/god">
-              God Panel
-            </NavLink>
-          ) : null}
         </nav>
       </div>
 
@@ -103,12 +114,24 @@ export function AppLayout() {
               </button>
             </div>
             <div className="flex flex-col gap-2">
-              {user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'GOD' ? (
+              {isGod
+                ? godLinks.map((link) => (
+                    <NavLink
+                      key={link.to}
+                      className={navLinkClass}
+                      to={link.to}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {link.label}
+                    </NavLink>
+                  ))
+                : null}
+              {user?.role === 'ADMIN' || user?.role === 'OWNER' ? (
                 <NavLink className={navLinkClass} to="/admin" onClick={() => setIsMenuOpen(false)}>
                   Dashboard
                 </NavLink>
               ) : null}
-              {(user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'GOD')
+              {user?.role === 'ADMIN' || user?.role === 'OWNER'
                 ? adminModules.map((module) => (
                     <NavLink
                       key={module.key}
@@ -132,11 +155,6 @@ export function AppLayout() {
                     </NavLink>
                   ))
                 : null}
-              {user?.role === 'GOD' ? (
-                <NavLink className={navLinkClass} to="/god" onClick={() => setIsMenuOpen(false)}>
-                  God Panel
-                </NavLink>
-              ) : null}
             </div>
           </aside>
         </div>

@@ -1,33 +1,44 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useRef, useState } from 'react';
+import { useGSAP } from '@gsap/react';
+import { gsap } from '../../../../shared/animations/gsapConfig';
 import { useAuth } from '../../../../shared/context/AuthContext';
 import { useTenant } from '../../../../shared/context/TenantContext';
 import { moduleRegistry } from '../../../../shared/constants/moduleRegistry';
+import { setGoogleTranslateLanguage } from '../../../../shared/utils/googleTranslate';
 
 const baseLinks = [
-  { to: '/admin', labelKey: 'nav.summary' },
-  { to: '/admin/users', labelKey: 'nav.users' },
-  { to: '/admin/services', labelKey: 'nav.services' },
-  { to: '/admin/appointments', labelKey: 'nav.appointments' },
-  { to: '/admin/agenda', labelKey: 'nav.agenda' },
-  { to: '/admin/notifications', labelKey: 'nav.whatsapp' },
-  { to: '/admin/reports', labelKey: 'nav.reports' }
+  { to: '/admin', label: 'Dashboard' },
+  { to: '/admin/users', label: 'Usuarios' },
+  { to: '/admin/services', label: 'Servicios' },
+  { to: '/admin/appointments', label: 'Citas' },
+  { to: '/admin/agenda', label: 'Agenda' },
+  { to: '/admin/notifications', label: 'WhatsApp' },
+  { to: '/admin/reports', label: 'Reportes' }
 ];
 
 export function AdminNav() {
   const location = useLocation();
-  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { tenant } = useTenant();
+  const navRef = useRef<HTMLDivElement | null>(null);
   const activeModules = tenant?.activeModules || [];
   const staffAllowedModules = new Set(['agenda', 'inventory', 'pos', 'tables']);
+  const [activeLang, setActiveLang] = useState<'es' | 'en' | 'pt' | 'fr' | 'it' | 'de' | 'zh-CN'>('es');
+
+  const godLinks = [
+    { to: '/god', label: 'Dashboard Global' },
+    { to: '/admin/tenants', label: 'Gestion de Tenants' },
+    { to: '/admin/users', label: 'Usuarios Globales' },
+    { to: '/admin/system', label: 'Configuracion del Sistema' }
+  ];
 
   const staffLinks = Object.values(moduleRegistry)
     .filter((module) => module.adminPath && staffAllowedModules.has(module.key) && activeModules.includes(module.key))
     .map((module) => ({ to: module.adminPath as string, label: module.label }));
 
   const adminLinks = user?.role === 'GOD'
-    ? [...baseLinks, { to: '/admin/tenants', labelKey: 'nav.businesses' }, { to: '/admin/approvals', labelKey: 'nav.approvals' }]
+    ? godLinks
     : baseLinks;
 
   const links = user?.role === 'STAFF' ? staffLinks : adminLinks;
@@ -41,14 +52,28 @@ export function AdminNav() {
       '/admin/notifications': 'M6 18h12M18 14V9a6 6 0 1 0-12 0v5l-2 2h16z',
       '/admin/reports': 'M4 19h16M7 16V9M12 16V5M17 16v-7',
       '/admin/tenants': 'M4 6h16M6 10h12M8 14h8M10 18h4',
-      '/admin/approvals': 'M5 13l4 4L19 7'
+      '/admin/approvals': 'M5 13l4 4L19 7',
+      '/admin/system': 'M12 6V2m0 20v-4m8-8h4M2 12h4m12.95 5.95 2.83 2.83M4.22 4.22 7.05 7.05m0 9.9-2.83 2.83m14.14-14.14-2.83 2.83',
+      '/god': 'M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z'
     };
 
   const mobileLinks = links.slice(0, 4);
 
+  useGSAP(
+    () => {
+      gsap.from(navRef.current, {
+        x: -24,
+        opacity: 0,
+        duration: 0.6,
+        ease: 'power2.out'
+      });
+    },
+    { scope: navRef }
+  );
+
   return (
     <>
-      <nav className="app-nav-surface hidden flex-wrap gap-2 text-xs lg:flex">
+      <nav ref={navRef} className="app-nav-surface hidden flex-wrap gap-2 text-xs lg:flex">
           {links.map((link) => (
           <Link
             key={link.to}
@@ -58,40 +83,152 @@ export function AdminNav() {
             <svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d={iconMap[link.to] || 'M5 12h14'} />
             </svg>
-              {'label' in link ? link.label : t(link.labelKey)}
+              {link.label}
           </Link>
         ))}
           <div className="ml-auto flex items-center gap-2">
             <button
-              className={`btn-ghost ${i18n.language === 'es' ? 'text-primary' : ''}`}
+              className={`btn-ghost ${activeLang === 'es' ? 'text-primary' : ''}`}
               type="button"
-              onClick={() => i18n.changeLanguage('es')}
+              onClick={() => {
+                setGoogleTranslateLanguage('es');
+                setActiveLang('es');
+              }}
             >
-              ES
+              Espanol
             </button>
             <button
-              className={`btn-ghost ${i18n.language === 'en' ? 'text-primary' : ''}`}
+              className={`btn-ghost ${activeLang === 'en' ? 'text-primary' : ''}`}
               type="button"
-              onClick={() => i18n.changeLanguage('en')}
+              onClick={() => {
+                setGoogleTranslateLanguage('en');
+                setActiveLang('en');
+              }}
             >
-              EN
+              Ingles
+            </button>
+            <button
+              className={`btn-ghost ${activeLang === 'pt' ? 'text-primary' : ''}`}
+              type="button"
+              onClick={() => {
+                setGoogleTranslateLanguage('pt');
+                setActiveLang('pt');
+              }}
+            >
+              Portugues
+            </button>
+            <button
+              className={`btn-ghost ${activeLang === 'fr' ? 'text-primary' : ''}`}
+              type="button"
+              onClick={() => {
+                setGoogleTranslateLanguage('fr');
+                setActiveLang('fr');
+              }}
+            >
+              Frances
+            </button>
+            <button
+              className={`btn-ghost ${activeLang === 'it' ? 'text-primary' : ''}`}
+              type="button"
+              onClick={() => {
+                setGoogleTranslateLanguage('it');
+                setActiveLang('it');
+              }}
+            >
+              Italiano
+            </button>
+            <button
+              className={`btn-ghost ${activeLang === 'de' ? 'text-primary' : ''}`}
+              type="button"
+              onClick={() => {
+                setGoogleTranslateLanguage('de');
+                setActiveLang('de');
+              }}
+            >
+              Aleman
+            </button>
+            <button
+              className={`btn-ghost ${activeLang === 'zh-CN' ? 'text-primary' : ''}`}
+              type="button"
+              onClick={() => {
+                setGoogleTranslateLanguage('zh-CN');
+                setActiveLang('zh-CN');
+              }}
+            >
+              Chino
             </button>
           </div>
       </nav>
-        <div className="fixed bottom-16 right-4 z-40 flex gap-2 lg:hidden">
+        <div className="fixed bottom-16 right-4 z-40 flex flex-wrap gap-2 lg:hidden">
           <button
-            className={`btn-ghost ${i18n.language === 'es' ? 'text-primary' : ''}`}
+            className={`btn-ghost ${activeLang === 'es' ? 'text-primary' : ''}`}
             type="button"
-            onClick={() => i18n.changeLanguage('es')}
+            onClick={() => {
+              setGoogleTranslateLanguage('es');
+              setActiveLang('es');
+            }}
           >
-            ES
+            Espanol
           </button>
           <button
-            className={`btn-ghost ${i18n.language === 'en' ? 'text-primary' : ''}`}
+            className={`btn-ghost ${activeLang === 'en' ? 'text-primary' : ''}`}
             type="button"
-            onClick={() => i18n.changeLanguage('en')}
+            onClick={() => {
+              setGoogleTranslateLanguage('en');
+              setActiveLang('en');
+            }}
           >
-            EN
+            Ingles
+          </button>
+          <button
+            className={`btn-ghost ${activeLang === 'pt' ? 'text-primary' : ''}`}
+            type="button"
+            onClick={() => {
+              setGoogleTranslateLanguage('pt');
+              setActiveLang('pt');
+            }}
+          >
+            Portugues
+          </button>
+          <button
+            className={`btn-ghost ${activeLang === 'fr' ? 'text-primary' : ''}`}
+            type="button"
+            onClick={() => {
+              setGoogleTranslateLanguage('fr');
+              setActiveLang('fr');
+            }}
+          >
+            Frances
+          </button>
+          <button
+            className={`btn-ghost ${activeLang === 'it' ? 'text-primary' : ''}`}
+            type="button"
+            onClick={() => {
+              setGoogleTranslateLanguage('it');
+              setActiveLang('it');
+            }}
+          >
+            Italiano
+          </button>
+          <button
+            className={`btn-ghost ${activeLang === 'de' ? 'text-primary' : ''}`}
+            type="button"
+            onClick={() => {
+              setGoogleTranslateLanguage('de');
+              setActiveLang('de');
+            }}
+          >
+            Aleman
+          </button>
+          <button
+            className={`btn-ghost ${activeLang === 'zh-CN' ? 'text-primary' : ''}`}
+            type="button"
+            onClick={() => {
+              setGoogleTranslateLanguage('zh-CN');
+              setActiveLang('zh-CN');
+            }}
+          >
+            Chino
           </button>
         </div>
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0a1020]/90 px-4 py-2 backdrop-blur lg:hidden">
@@ -105,7 +242,7 @@ export function AdminNav() {
               <svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d={iconMap[link.to] || 'M5 12h14'} />
               </svg>
-              {'label' in link ? link.label : t(link.labelKey)}
+              {link.label}
             </Link>
           ))}
         </div>

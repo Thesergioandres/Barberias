@@ -51,12 +51,18 @@ export function createUsersRoutes({
   });
 
   router.get('/', authMiddleware, requireRolesMiddleware('ADMIN'), async (req: Request, res: Response) => {
+    const role = typeof req.query.role === 'string' ? req.query.role : undefined;
+    if (req.auth?.role === 'GOD') {
+      const users = await usersRepository.listAll?.() || [];
+      const filtered = role ? users.filter((user) => user.role === role) : users;
+      return res.json(filtered.map(sanitizeUser));
+    }
+
     const tenantId = req.auth?.tenantId;
     if (!tenantId) return res.status(403).json({ message: 'No tenantId' });
 
-    const role = typeof req.query.role === 'string' ? req.query.role : undefined;
     const users = await usersRepository.list(tenantId, role);
-    res.json(users.map(sanitizeUser));
+    return res.json(users.map(sanitizeUser));
   });
 
   router.get('/pending', authMiddleware, requireRolesMiddleware('GOD'), async (req: Request, res: Response) => {

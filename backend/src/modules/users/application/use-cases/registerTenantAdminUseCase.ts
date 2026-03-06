@@ -25,9 +25,22 @@ export class RegisterTenantAdminUseCase {
     adminPassword?: string;
     branchName?: string;
     branchAddress?: string;
+    legalConsent?: {
+      acceptedAt?: string;
+      termsVersion?: string;
+      privacyVersion?: string;
+      dataTreatmentVersion?: string;
+      cookiesVersion?: string;
+      dpaVersion?: string;
+      saasVersion?: string;
+    };
   }) {
     if (input.adminPhone && !isE164(input.adminPhone)) {
       return this.error('adminPhone debe estar en formato E.164', 400);
+    }
+
+    if (!input.legalConsent?.acceptedAt || !input.legalConsent?.termsVersion || !input.legalConsent?.dataTreatmentVersion) {
+      return this.error('Aceptacion legal requerida para crear el tenant', 400);
     }
 
     const result = await this.deps.factoryService.provisionTenantAdmin(input);

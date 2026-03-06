@@ -8,6 +8,15 @@ type TenantDocument = {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  legalConsent?: {
+    acceptedAt?: Date;
+    termsVersion?: string;
+    privacyVersion?: string;
+    dataTreatmentVersion?: string;
+    cookiesVersion?: string;
+    dpaVersion?: string;
+    saasVersion?: string;
+  };
   businessHours: Array<{
     day: number;
     openTime: string;
@@ -49,6 +58,15 @@ const tenantSchema = new mongoose.Schema<TenantDocument>(
     subdomain: { type: String, required: true, unique: true, index: true },
     verticalSlug: { type: String, required: true, index: true },
     activeModules: { type: [String], default: [] },
+    legalConsent: {
+      acceptedAt: { type: Date },
+      termsVersion: { type: String },
+      privacyVersion: { type: String },
+      dataTreatmentVersion: { type: String },
+      cookiesVersion: { type: String },
+      dpaVersion: { type: String },
+      saasVersion: { type: String }
+    },
     businessHours: {
       type: [
         {

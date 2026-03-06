@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { EssenceMiniLoader } from './EssenceMiniLoader';
 
 type LoginCardProps = {
   title?: string;
@@ -81,8 +82,19 @@ export function LoginCard({ title = 'Iniciar sesion', subtitle, demoHint, allowe
           placeholder="Tu contrasena"
         />
       </label>
-      <button type="button" className="btn-primary" onClick={handleLogin} disabled={loading}>
-        {loading ? 'Ingresando...' : 'Iniciar sesion'}
+      <button
+        type="button"
+        className={`btn-primary relative ${loading ? 'pointer-events-none' : ''}`}
+        onClick={handleLogin}
+        disabled={loading}
+        style={loading ? { filter: 'drop-shadow(0 0 10px rgba(0,240,255,0.35))' } : undefined}
+      >
+        <span className={loading ? 'opacity-0' : 'opacity-100'}>Iniciar sesion</span>
+        {loading ? (
+          <span className="absolute inset-0 flex items-center justify-center">
+            <EssenceMiniLoader />
+          </span>
+        ) : null}
       </button>
       {error ? <p className="text-sm text-secondary">{error}</p> : null}
       {demoHint ? <p className="text-xs text-muted">{demoHint}</p> : null}

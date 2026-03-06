@@ -4,6 +4,7 @@ import { apiRequest } from '../../shared/infrastructure/http/apiClient';
 import { LoadingOverlay } from '../../shared/components/LoadingOverlay';
 import { VERTICALS_REGISTRY } from '../../shared/constants/verticalsRegistry';
 import type { AppModule } from '../../shared/types/appModules';
+import { LEGAL_VERSIONS } from '../../shared/constants/legal';
 
 const initialState = {
   tenantName: '',
@@ -29,6 +30,8 @@ const defaultConfig = {
 export function CreateTenantPage() {
   const location = useLocation();
   const [form, setForm] = useState(initialState);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptDataPolicy, setAcceptDataPolicy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +54,12 @@ export function CreateTenantPage() {
     setLoading(true);
     setError(null);
 
+    if (!acceptTerms || !acceptDataPolicy) {
+      setLoading(false);
+      setError('Debes aceptar los terminos y la politica de datos para continuar.');
+      return;
+    }
+
     try {
       await apiRequest('/users/register-tenant', {
         method: 'POST',
@@ -70,7 +79,14 @@ export function CreateTenantPage() {
           adminPhone: form.adminPhone,
           adminPassword: form.adminPassword,
           branchName: form.branchName,
-          branchAddress: form.branchAddress
+          branchAddress: form.branchAddress,
+          legalConsent: {
+            acceptedAt: new Date().toISOString(),
+            termsVersion: LEGAL_VERSIONS.terms,
+            privacyVersion: LEGAL_VERSIONS.privacy,
+            dataTreatmentVersion: LEGAL_VERSIONS.dataTreatment,
+            cookiesVersion: LEGAL_VERSIONS.cookies
+          }
         })
       });
       setSuccess(true);
@@ -162,6 +178,32 @@ export function CreateTenantPage() {
             <label className="text-sm">
               Direccion
               <input className="input-field mt-2" value={form.branchAddress} onChange={updateField('branchAddress')} />
+            </label>
+          </div>
+          <div className="space-y-2 text-xs text-muted">
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={acceptDataPolicy}
+                onChange={(event) => setAcceptDataPolicy(event.target.checked)}
+                required
+              />
+              <span>
+                Autorizo el tratamiento de mis datos personales conforme a la{' '}
+                <Link className="text-primary" to="/legal/ptd">Politica de Tratamiento de Datos</Link>.
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(event) => setAcceptTerms(event.target.checked)}
+                required
+              />
+              <span>
+                Acepto los <Link className="text-primary" to="/legal/terms">Terminos del Servicio</Link> y el{' '}
+                <Link className="text-primary" to="/legal/saas">Acuerdo SaaS</Link>.
+              </span>
             </label>
           </div>
           <button className="btn-primary" type="submit">Crear cuenta</button>

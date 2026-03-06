@@ -5,6 +5,15 @@ export interface TenantEntity {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  legalConsent?: {
+    acceptedAt?: string;
+    termsVersion?: string;
+    privacyVersion?: string;
+    dataTreatmentVersion?: string;
+    cookiesVersion?: string;
+    dpaVersion?: string;
+    saasVersion?: string;
+  };
   businessHours?: Array<{
     day: number;
     openTime: string;

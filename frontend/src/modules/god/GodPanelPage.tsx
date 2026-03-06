@@ -20,21 +20,26 @@ type TenantRecord = {
   email?: string | null;
   phone?: string | null;
   status: string;
+  planId?: string;
   createdAt?: string;
 };
 
 type Plan = {
   id: string;
   name: string;
+  price: number;
 };
 
-const cityUsage = [
-  { city: 'Bogota', tenants: 38, activity: 120 },
-  { city: 'Medellin', tenants: 24, activity: 92 },
-  { city: 'Cali', tenants: 18, activity: 66 },
-  { city: 'Barranquilla', tenants: 12, activity: 44 },
-  { city: 'Cartagena', tenants: 9, activity: 31 }
-];
+type TenantsMetrics = {
+  total: number;
+  byStatus: Record<string, number>;
+};
+
+type WhatsappUsage = {
+  tenantId: string;
+  tenantName: string;
+  totalMessages: number;
+};
 
 export function GodPanelPage() {
   const queryClient = useQueryClient();
@@ -52,15 +57,57 @@ export function GodPanelPage() {
     queryFn: () => apiRequest<TenantRecord[]>('/tenants')
   });
 
+  const metricsQuery = useQuery({
+    queryKey: ['tenants-metrics'],
+    queryFn: () => apiRequest<TenantsMetrics>('/tenants/metrics')
+  });
+
   const plansQuery = useQuery({
     queryKey: ['plans'],
-    queryFn: () => apiRequest<Plan[]>('/plans'),
-    enabled: Boolean(selectedTenant)
+    queryFn: () => apiRequest<Plan[]>('/plans')
+  });
+
+  const whatsappUsageQuery = useQuery({
+    queryKey: ['tenants-whatsapp-usage'],
+    queryFn: () => apiRequest<WhatsappUsage[]>('/tenants/usage/whatsapp')
   });
 
   const pendingTenants = useMemo(() => {
     return (tenantsQuery.data || []).filter((tenant) => tenant.status === 'onboarding');
   }, [tenantsQuery.data]);
+
+  const activeTenants = useMemo(() => {
+    return (tenantsQuery.data || []).filter((tenant) => tenant.status === 'active');
+  }, [tenantsQuery.data]);
+
+  const mrrValue = useMemo(() => {
+    const priceByPlan = new Map((plansQuery.data || []).map((plan) => [plan.id, plan.price]));
+    return activeTenants.reduce((sum, tenant) => sum + (tenant.planId ? priceByPlan.get(tenant.planId) || 0 : 0), 0);
+  }, [activeTenants, plansQuery.data]);
+
+  const whatsappCoverage = useMemo(() => {
+    const usage = whatsappUsageQuery.data || [];
+    const totalTenants = (tenantsQuery.data || []).length;
+    if (totalTenants === 0) return 0;
+    const withMessages = usage.filter((item) => item.totalMessages > 0).length;
+    return (withMessages / totalTenants) * 100;
+  }, [tenantsQuery.data, whatsappUsageQuery.data]);
+
+  const tenantActivity = useMemo(() => {
+    const usage = [...(whatsappUsageQuery.data || [])];
+    usage.sort((a, b) => b.totalMessages - a.totalMessages);
+    return usage.slice(0, 5).map((item) => ({
+      name: item.tenantName,
+      messages: item.totalMessages
+    }));
+  }, [whatsappUsageQuery.data]);
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(value);
 
   useEffect(() => {
     if (!selectedTenant) return;
@@ -128,27 +175,33 @@ export function GodPanelPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <div className="app-card">
           <p className="text-xs uppercase tracking-[0.2em] text-muted">Tenants activos</p>
-          <p className="mt-4 text-3xl font-semibold">128</p>
+          <p className="mt-4 text-3xl font-semibold">
+            {tenantsQuery.isLoading ? '...' : activeTenants.length}
+          </p>
         </div>
         <div className="app-card">
           <p className="text-xs uppercase tracking-[0.2em] text-muted">WhatsApp health</p>
-          <p className="mt-4 text-3xl font-semibold">99.3%</p>
+          <p className="mt-4 text-3xl font-semibold">
+            {whatsappUsageQuery.isLoading ? '...' : `${whatsappCoverage.toFixed(1)}%`}
+          </p>
         </div>
         <div className="app-card">
           <p className="text-xs uppercase tracking-[0.2em] text-muted">Ingresos MRR</p>
-          <p className="mt-4 text-3xl font-semibold">$42k</p>
+          <p className="mt-4 text-3xl font-semibold">
+            {plansQuery.isLoading ? '...' : formatCurrency(mrrValue)}
+          </p>
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="app-card">
-          <h3 className="text-lg font-semibold">Demanda por ciudad</h3>
-          <p className="mt-2 text-sm text-muted">Top ciudades con mas actividad y tenants.</p>
+          <h3 className="text-lg font-semibold">Actividad por tenant</h3>
+          <p className="mt-2 text-sm text-muted">Top tenants por mensajes de WhatsApp.</p>
           <div className="mt-6 h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={cityUsage} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+              <BarChart data={tenantActivity} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="rgba(248,250,252,0.08)" strokeDasharray="3 3" />
-                <XAxis dataKey="city" stroke="#c3cad6" fontSize={12} />
+                <XAxis dataKey="name" stroke="#c3cad6" fontSize={12} />
                 <YAxis stroke="#c3cad6" fontSize={12} />
                 <Tooltip
                   contentStyle={{
@@ -157,15 +210,15 @@ export function GodPanelPage() {
                     borderRadius: '12px'
                   }}
                 />
-                <Bar dataKey="tenants" fill="var(--primary)" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="messages" fill="var(--primary)" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="app-card">
-          <h3 className="text-lg font-semibold">Mapa de demanda</h3>
-          <p className="mt-2 text-sm text-muted">Vista rapida de concentracion por ciudad.</p>
+          <h3 className="text-lg font-semibold">Detalle de actividad</h3>
+          <p className="mt-2 text-sm text-muted">Mensajes de WhatsApp por tenant.</p>
           <div className="mt-6 flex items-center justify-center">
             <svg className="w-full max-w-sm" viewBox="0 0 240 200" fill="none">
               <rect x="10" y="10" width="220" height="180" rx="24" fill="rgba(255,255,255,0.04)" stroke="rgba(248,250,252,0.12)" />
@@ -177,12 +230,18 @@ export function GodPanelPage() {
             </svg>
           </div>
           <div className="mt-4 grid gap-2 text-sm text-muted">
-            {cityUsage.map((city) => (
-              <div key={city.city} className="flex items-center justify-between">
-                <span>{city.city}</span>
-                <span className="text-ink">{city.activity} reservas</span>
-              </div>
-            ))}
+            {whatsappUsageQuery.isLoading ? (
+              <p>Cargando actividad...</p>
+            ) : tenantActivity.length === 0 ? (
+              <p>Sin actividad registrada.</p>
+            ) : (
+              tenantActivity.map((tenant) => (
+                <div key={tenant.name} className="flex items-center justify-between">
+                  <span>{tenant.name}</span>
+                  <span className="text-ink">{tenant.messages} mensajes</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

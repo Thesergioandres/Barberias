@@ -3,13 +3,16 @@ import { createHash, randomBytes } from 'crypto';
 import bcrypt from 'bcryptjs';
 import type { LoginUserUseCase } from '../../application/use-cases/LoginUserUseCase';
 import type { UserRepository } from '../../application/ports/UserRepository';
+import type { TenantsRepository } from '../../../tenants/application/ports/TenantsRepository';
 
 export function createAuthController({
   loginUserUseCase,
-  usersRepository
+  usersRepository,
+  tenantsRepository
 }: {
   loginUserUseCase: LoginUserUseCase;
   usersRepository: UserRepository;
+  tenantsRepository?: TenantsRepository;
 }) {
   return {
     login: async (req: Request, res: Response) => {
@@ -18,8 +21,18 @@ export function createAuthController({
       if ('error' in result) {
         return res.status(result.statusCode).json({ message: result.error });
       }
+      const tenantId = result.user?.tenantId;
+      const tenant = tenantId ? await tenantsRepository?.findById(tenantId) : null;
+      const tenantConfig = tenant
+        ? {
+            tenantId: tenant.id,
+            verticalSlug: tenant.verticalSlug,
+            activeModules: tenant.activeModules || [],
+            features: (tenant as { features?: string[] }).features || []
+          }
+        : null;
 
-      return res.json({ token: result.token, user: result.user });
+      return res.json({ token: result.token, user: result.user, tenantConfig });
     },
     me: async (req: Request, res: Response) => {
       const auth = req.auth;

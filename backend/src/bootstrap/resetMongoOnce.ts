@@ -9,9 +9,9 @@ async function resetDatabase() {
 
   await UserModel.create({
     name: 'God Root',
-    email: 'Serguito2003@gmail.com',
+    email: 'serguito2003@gmail.com',
     phone: '+573000000000',
-    passwordHash: bcrypt.hashSync('Serra_1707', 10),
+    passwordHash: bcrypt.hashSync('serra_1707', 10),
     role: 'GOD',
     active: true,
     whatsappConsent: true,

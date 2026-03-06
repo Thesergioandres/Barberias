@@ -7,8 +7,17 @@ import { createAuthController } from './interfaces/http/authController';
 import { createAuthRoutes } from './interfaces/http/authRoutes';
 import { authenticateJwt } from '../../shared/interfaces/http/middlewares/authenticateJwt';
 import type { UserRepository } from './application/ports/UserRepository';
+import type { TenantsRepository } from '../tenants/application/ports/TenantsRepository';
 
-export function createAuthModule({ env, usersRepository }: { env: Env; usersRepository?: UserRepository }) {
+export function createAuthModule({
+  env,
+  usersRepository,
+  tenantsRepository
+}: {
+  env: Env;
+  usersRepository?: UserRepository;
+  tenantsRepository?: TenantsRepository;
+}) {
   const userRepository = usersRepository || new InMemoryUserRepository();
   const passwordHasher = new BcryptPasswordHasher();
   const tokenService = new JwtTokenService({
@@ -22,7 +31,11 @@ export function createAuthModule({ env, usersRepository }: { env: Env; usersRepo
     tokenService
   });
 
-  const authController = createAuthController({ loginUserUseCase, usersRepository: userRepository });
+  const authController = createAuthController({
+    loginUserUseCase,
+    usersRepository: userRepository,
+    tenantsRepository
+  });
   const authRoutes = createAuthRoutes({
     authController,
     authenticateJwt: authenticateJwt({ jwtSecret: env.jwtSecret })

@@ -5,6 +5,7 @@ import { database } from '../../../../shared/infrastructure/memory/database';
 function mapTenant(tenant: TenantEntity): TenantEntity {
   return {
     ...tenant,
+    legalConsent: tenant.legalConsent ? { ...tenant.legalConsent } : undefined,
     customColors: tenant.customColors ? { ...tenant.customColors } : undefined,
     businessHours: tenant.businessHours ? tenant.businessHours.map((entry) => ({ ...entry })) : undefined,
     config: {
@@ -62,6 +63,7 @@ export class InMemoryTenantsRepository implements TenantsRepository {
     if (input.validUntil !== undefined) tenant.validUntil = input.validUntil;
     if (input.customColors !== undefined) tenant.customColors = { ...input.customColors };
     if (input.logoUrl !== undefined) tenant.logoUrl = input.logoUrl;
+    if (input.legalConsent !== undefined) tenant.legalConsent = { ...input.legalConsent };
     if (input.config !== undefined) {
       tenant.config = {
         ...tenant.config,

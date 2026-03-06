@@ -9,6 +9,15 @@ function mapTenant(document: {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  legalConsent?: {
+    acceptedAt?: Date;
+    termsVersion?: string;
+    privacyVersion?: string;
+    dataTreatmentVersion?: string;
+    cookiesVersion?: string;
+    dpaVersion?: string;
+    saasVersion?: string;
+  };
   businessHours?: Array<{ day: number; openTime: string; closeTime: string; isOpen: boolean }>;
   planId: string;
   status: string;
@@ -29,6 +38,19 @@ function mapTenant(document: {
     subdomain: document.subdomain,
     verticalSlug: document.verticalSlug,
     activeModules: document.activeModules || [],
+    legalConsent: document.legalConsent
+      ? {
+          acceptedAt: document.legalConsent.acceptedAt
+            ? new Date(document.legalConsent.acceptedAt).toISOString()
+            : undefined,
+          termsVersion: document.legalConsent.termsVersion,
+          privacyVersion: document.legalConsent.privacyVersion,
+          dataTreatmentVersion: document.legalConsent.dataTreatmentVersion,
+          cookiesVersion: document.legalConsent.cookiesVersion,
+          dpaVersion: document.legalConsent.dpaVersion,
+          saasVersion: document.legalConsent.saasVersion
+        }
+      : undefined,
     businessHours: document.businessHours,
     planId: document.planId,
     planName,

@@ -1,6 +1,8 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { VERTICALS_REGISTRY } from '../../shared/constants/verticalsRegistry';
+import { gsap } from '../../shared/animations/gsapConfig';
+import { EssenceMicroSymbol } from '../../shared/components/EssenceMicroSymbol';
 
 const MODULE_DEFINITIONS: Record<string, { label: string; description: string }> = {
   agenda: {
@@ -90,10 +92,28 @@ const MODULE_DEFINITIONS: Record<string, { label: string; description: string }>
 };
 
 export function VerticalLandingPage() {
+  const baseChipsRef = useRef<HTMLDivElement | null>(null);
   const { slug } = useParams();
   const vertical = useMemo(() => {
     return VERTICALS_REGISTRY.find((item) => item.slug === slug);
   }, [slug]);
+
+  const theme = useMemo(() => {
+    return (
+      vertical?.theme ?? {
+        primary: '#00F0FF',
+        secondary: '#8A2BE2'
+      }
+    );
+  }, [vertical]);
+
+  const safeSecondary = useMemo(() => {
+    const normalized = theme.secondary.trim().toUpperCase();
+    if (normalized === '#FFFFFF' || normalized === '#FDFEFE') {
+      return '#E6EEF5';
+    }
+    return theme.secondary;
+  }, [theme.secondary]);
 
   useEffect(() => {
     if (!vertical) return;
@@ -108,6 +128,22 @@ export function VerticalLandingPage() {
     }
     meta.setAttribute('content', description);
   }, [vertical]);
+
+  useEffect(() => {
+    const primaryRgb = theme.primary
+      .replace('#', '')
+      .match(/.{1,2}/g)
+      ?.map((value) => Number.parseInt(value, 16))
+      .join(', ') ?? '0, 240, 255';
+    gsap.to(document.documentElement, {
+      '--primary': theme.primary,
+      '--secondary': safeSecondary,
+      '--primary-glow': `${theme.primary}33`,
+      '--primary-rgb': primaryRgb,
+      duration: 0.5,
+      ease: 'power1.out'
+    });
+  }, [theme.primary, safeSecondary]);
 
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll('.reveal-on-scroll')) as HTMLElement[];
@@ -148,16 +184,107 @@ export function VerticalLandingPage() {
     };
   });
 
+  const features = vertical.features ?? [];
+  const baseModules = vertical.baseModules ?? [];
+  const moduleLabelMap: Record<string, string> = {
+    agenda: 'Agenda',
+    staff: 'Staff',
+    inventory: 'Inventario',
+    pos: 'POS',
+    projects: 'Proyectos'
+  };
+
+  const baseModuleIcons: Record<string, string> = {
+    agenda:
+      'M8 7V3M16 7V3M4 11h16M6 7h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z',
+    staff:
+      'M16 19a4 4 0 0 0-8 0M12 13a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm7 4.5a3.5 3.5 0 0 0-3-3',
+    inventory:
+      'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z',
+    pos:
+      'M3 7h18M5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7M8 11h3M8 15h3M13 11h3M13 15h3',
+    projects:
+      'M3 3h18v18H3V3zm4 4h10M7 12h10M7 16h6'
+  };
+
+  useEffect(() => {
+    if (!baseChipsRef.current) return;
+    const chips = Array.from(baseChipsRef.current.querySelectorAll('[data-base-chip]')) as HTMLElement[];
+    if (chips.length === 0) return;
+    const tween = gsap.fromTo(
+      chips,
+      { opacity: 0, y: 8 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.25,
+        stagger: 0.08,
+        ease: 'power2.out',
+        delay: 0.1
+      }
+    );
+    return () => tween.kill();
+  }, [vertical.slug]);
+
   return (
-    <section className="space-y-16">
+    <section
+      className="space-y-16"
+      style={
+        {
+          '--primary': theme.primary,
+          '--secondary': safeSecondary,
+          '--primary-glow': `${theme.primary}33`,
+          '--primary-rgb': theme.primary
+            .replace('#', '')
+            .match(/.{1,2}/g)
+            ?.map((value) => Number.parseInt(value, 16))
+            .join(', ')
+        } as React.CSSProperties
+      }
+    >
       <div className="app-card relative overflow-hidden p-10 reveal-on-scroll">
         {isReady ? (
-          <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[radial-gradient(circle_at_40%_40%,rgba(0,240,255,0.7),transparent_65%)] blur-2xl" />
+          <div
+            className="absolute -right-24 -top-24 h-64 w-64 rounded-full blur-2xl"
+            style={{
+              background: 'radial-gradient(circle at 40% 40%, var(--primary-glow), transparent 65%)'
+            }}
+          />
         ) : null}
         <p className="app-chip">Solucion integral</p>
         <h1 className="mt-6 text-4xl font-semibold md:text-5xl brand-gradient-text">
           Solucion Integral para {vertical.name}
         </h1>
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-muted">
+            <EssenceMicroSymbol size={18} />
+            Infraestructura base
+          </div>
+          <div ref={baseChipsRef} className="flex flex-wrap gap-2">
+            {baseModules.map((module) => {
+              const label = moduleLabelMap[module] || module;
+              const iconPath = baseModuleIcons[module] || baseModuleIcons.projects;
+              return (
+                <span
+                  key={module}
+                  data-base-chip
+                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[10px] uppercase tracking-[0.3em] transition-transform duration-200 hover:-translate-y-0.5"
+                  aria-label={`Infraestructura base: ${label}`}
+                  style={{
+                    borderColor: 'var(--primary)',
+                    color: 'var(--primary)',
+                    background: 'rgba(var(--primary-rgb), 0.1)'
+                  }}
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d={iconPath} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        </div>
         <p className="mt-4 text-sm text-muted">
           Operacion completa, branding a medida y automatizaciones diseñadas para crecer sin friccion.
         </p>
@@ -199,6 +326,47 @@ export function VerticalLandingPage() {
               <p className="mt-3 text-sm text-muted">{module.description}</p>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="space-y-6 reveal-on-scroll">
+        <div className="flex flex-wrap items-center gap-3">
+          <EssenceMicroSymbol size={22} />
+          <div>
+            <h2 className="text-2xl font-semibold brand-gradient-text">Capacidades de la fabrica</h2>
+            <p className="mt-2 text-sm text-muted">
+              Funciones exclusivas diseñadas para tu vertical.
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => {
+            const isOnDemand = feature.toLowerCase().includes('bajo demanda');
+            return (
+              <div
+                key={feature}
+                className="rounded-3xl border border-[rgba(138,43,226,0.25)] bg-[#0b1224]/60 p-5 backdrop-blur-[18px]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border"
+                    style={{ borderColor: 'var(--primary)', opacity: 0.7 }}
+                  >
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--primary)' }} />
+                  </span>
+                  {isOnDemand ? (
+                    <span
+                      className="rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.25em]"
+                      style={{ borderColor: 'var(--secondary)', color: 'var(--secondary)' }}
+                    >
+                      Bajo demanda
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-4 text-sm text-muted">{feature}</p>
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -31,6 +31,11 @@ import { createNotificationsModule } from '../modules/notifications/module';
 import { createAppointmentsModule } from '../modules/appointments/module';
 import { createReportsModule } from '../modules/reports/module';
 import { createInventoryModule } from '../modules/inventory/module';
+import { createPosModule } from '../modules/pos/module';
+import { createTablesModule } from '../modules/tables/module';
+import { createProjectsModule } from '../modules/projects/module';
+import { createSubscriptionsModule } from '../modules/subscriptions/module';
+import { createPaymentsModule } from '../modules/payments/module';
 import { createUploadRoutes } from '../routes/upload';
 import { healthRouter } from '../routes/health';
 import type { Env } from '../config/env';
@@ -152,7 +157,39 @@ export function createApp({
     authenticateJwt: authMiddleware,
     requireRoles
   });
-  const { authRoutes } = createAuthModule({ env, usersRepository });
+  const { authRoutes } = createAuthModule({ env, usersRepository, tenantsRepository });
+
+  const { posRoutes } = createPosModule({
+    useMongo: persistence.useMongo,
+    authenticateJwt: authMiddleware,
+    requireRoles
+  });
+
+  const { tablesRoutes } = createTablesModule({
+    useMongo: persistence.useMongo,
+    authenticateJwt: authMiddleware,
+    requireRoles
+  });
+
+  const { projectsRoutes } = createProjectsModule({
+    useMongo: persistence.useMongo,
+    authenticateJwt: authMiddleware,
+    requireRoles
+  });
+
+  const { subscriptionsRoutes } = createSubscriptionsModule({
+    useMongo: persistence.useMongo,
+    authenticateJwt: authMiddleware,
+    requireRoles
+  });
+
+  const { paymentsRoutes } = createPaymentsModule({
+    env,
+    plansRepository,
+    tenantsRepository,
+    authenticateJwt: authMiddleware,
+    requireRoles
+  });
 
   const { uploadRoutes } = createUploadRoutes({
     authenticateJwt: authMiddleware,
@@ -228,6 +265,11 @@ export function createApp({
   app.use('/api/reports', reportsRoutes);
   app.use('/api/notifications', notificationsRoutes);
   app.use('/api/inventory', inventoryRoutes);
+  app.use('/api/pos', posRoutes);
+  app.use('/api/tables', tablesRoutes);
+  app.use('/api/projects', projectsRoutes);
+  app.use('/api/subscriptions', subscriptionsRoutes);
+  app.use('/api/payments', paymentsRoutes);
   app.use('/api/upload', uploadRoutes);
 
   const publicDir = path.join(process.cwd(), 'public');

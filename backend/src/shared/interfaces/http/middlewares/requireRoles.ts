@@ -8,7 +8,25 @@ export function requireRoles(...allowedRoles: UserRole[]) {
       return res.status(403).json({ message: 'No autorizado para esta acción' });
     }
 
-    if (userRole === 'GOD' || userRole === 'OWNER') {
+    if (userRole === 'GOD') {
+      const operationalBases = [
+        '/appointments',
+        '/inventory',
+        '/services',
+        '/branches',
+        '/barbers',
+        '/pos',
+        '/tables'
+      ];
+      const base = req.baseUrl.toLowerCase();
+      const isCreate = req.method === 'POST' && (req.path === '/' || req.path === '');
+      if (isCreate && operationalBases.some((route) => base.includes(route))) {
+        return res.status(403).json({ message: 'GOD no puede crear registros operativos' });
+      }
+      return next();
+    }
+
+    if (userRole === 'OWNER') {
       return next();
     }
 

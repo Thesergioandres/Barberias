@@ -39,6 +39,15 @@ type Tenant = {
   subdomain: string;
   verticalSlug: string;
   activeModules: string[];
+  legalConsent?: {
+    acceptedAt?: string;
+    termsVersion?: string;
+    privacyVersion?: string;
+    dataTreatmentVersion?: string;
+    cookiesVersion?: string;
+    dpaVersion?: string;
+    saasVersion?: string;
+  };
   businessHours?: Array<{
     day: number;
     openTime: string;
@@ -199,6 +208,15 @@ export const database: {
       phone: '+573000000001',
       validUntil: null,
       createdAt: new Date().toISOString(),
+      legalConsent: {
+        acceptedAt: new Date().toISOString(),
+        termsVersion: '2026-03-05',
+        privacyVersion: '2026-03-05',
+        dataTreatmentVersion: '2026-03-05',
+        cookiesVersion: '2026-03-05',
+        dpaVersion: '2026-03-05',
+        saasVersion: '2026-03-05'
+      },
       customColors: {
         primary: '#f59e0b',
         secondary: '#fde68a'

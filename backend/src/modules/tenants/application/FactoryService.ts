@@ -46,6 +46,15 @@ export class FactoryService {
     adminPassword?: string;
     branchName?: string;
     branchAddress?: string;
+    legalConsent?: {
+      acceptedAt?: string;
+      termsVersion?: string;
+      privacyVersion?: string;
+      dataTreatmentVersion?: string;
+      cookiesVersion?: string;
+      dpaVersion?: string;
+      saasVersion?: string;
+    };
   }) {
     const tenantName = input.tenantName?.trim();
     const adminName = input.adminName?.trim();
@@ -55,6 +64,10 @@ export class FactoryService {
 
     if (!tenantName || !adminName || !adminEmail || !adminPhone || !adminPassword) {
       return this.error('tenantName, adminName, adminEmail, adminPhone y adminPassword son requeridos', 400);
+    }
+
+    if (!input.legalConsent?.acceptedAt || !input.legalConsent?.termsVersion || !input.legalConsent?.dataTreatmentVersion) {
+      return this.error('Consentimiento legal requerido', 400);
     }
 
     const slug = normalizeSlug(input.slug || tenantName);
@@ -90,6 +103,7 @@ export class FactoryService {
       createdAt: new Date().toISOString(),
       customColors: input.customColors || DEFAULT_COLORS,
       logoUrl: input.logoUrl ?? null,
+      legalConsent: input.legalConsent,
       config: this.deps.defaultConfig
     });
 

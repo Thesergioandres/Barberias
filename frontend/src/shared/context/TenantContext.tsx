@@ -130,7 +130,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   }, [applyBranding]);
 
   useEffect(() => {
-    const { mode, slug } = resolveHostContext(window.location.hostname);
+    const { mode, slug } = resolveHostContext(window.location.hostname, window.location.pathname);
     const controller = new AbortController();
 
     if (mode === 'tenant' && slug && !tenant) {

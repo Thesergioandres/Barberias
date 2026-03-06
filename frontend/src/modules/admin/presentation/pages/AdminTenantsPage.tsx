@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { gsap } from '../../../../shared/animations/gsapConfig';
 import { apiRequest } from '../../../../shared/infrastructure/http/apiClient';
+import { moduleRegistry } from '../../../../shared/constants/moduleRegistry';
 import { AdminNav } from '../components/AdminNav';
+import { EssenceMiniLoader } from '../../../../shared/components/EssenceMiniLoader';
 
 type TenantEntity = {
   id: string;
@@ -10,6 +13,10 @@ type TenantEntity = {
   status: string;
   planId: string;
   planName?: string;
+  activeModules?: string[];
+  email?: string | null;
+  createdAt?: string;
+  validUntil?: string | null;
   config: {
     bufferTimeMinutes: number;
     requirePaymentForNoShows: boolean;
@@ -17,59 +24,34 @@ type TenantEntity = {
   };
 };
 
-type Plan = {
+type UserRecord = {
   id: string;
   name: string;
-  price: number;
-  maxBranches: number;
-  maxStaff: number;
-  maxMonthlyAppointments: number;
-  features: string[];
-};
-
-type Metrics = {
-  total: number;
-  byStatus: Record<string, number>;
-};
-
-type WhatsAppUsage = {
-  tenantId: string;
-  tenantName: string;
-  totalMessages: number;
-};
-
-const statusLabels: Record<string, { label: string; className: string }> = {
-  trial: { label: 'Trial', className: 'bg-amber-900/40 text-amber-200' },
-  active: { label: 'Activo', className: 'bg-emerald-900/40 text-emerald-200' },
-  suspended: { label: 'Suspendido', className: 'bg-red-900/40 text-red-200' }
+  email: string;
+  role: string;
+  tenantId?: string | null;
 };
 
 export function AdminTenantsPage() {
   const [tenants, setTenants] = useState<TenantEntity[]>([]);
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [planDrafts, setPlanDrafts] = useState<Record<string, Plan>>({});
-  const [metrics, setMetrics] = useState<Metrics | null>(null);
-  const [usage, setUsage] = useState<WhatsAppUsage[]>([]);
+  const [owners, setOwners] = useState<UserRecord[]>([]);
+  const [admins, setAdmins] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionTenantId, setActionTenantId] = useState<string | null>(null);
+  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
 
   useEffect(() => {
     async function fetchTenants() {
       try {
-        const [tenantsData, metricsData, plansData, usageData] = await Promise.all([
+        const [tenantsData, ownersData, adminsData] = await Promise.all([
           apiRequest<TenantEntity[]>('/tenants'),
-          apiRequest<Metrics>('/tenants/metrics'),
-          apiRequest<Plan[]>('/plans'),
-          apiRequest<WhatsAppUsage[]>('/tenants/usage/whatsapp')
+          apiRequest<UserRecord[]>('/users?role=OWNER'),
+          apiRequest<UserRecord[]>('/users?role=ADMIN')
         ]);
         setTenants(tenantsData);
-        setMetrics(metricsData);
-        setPlans(plansData);
-        setUsage(usageData);
-        setPlanDrafts(plansData.reduce<Record<string, Plan>>((acc, plan) => {
-          acc[plan.id] = plan;
-          return acc;
-        }, {}));
+        setOwners(ownersData);
+        setAdmins(adminsData);
       } catch (err: any) {
         setError(err.message || 'Error al cargar los tenants');
       } finally {
@@ -80,36 +62,67 @@ export function AdminTenantsPage() {
     fetchTenants();
   }, []);
 
-  const updatePlanDraft = (planId: string, patch: Partial<Plan>) => {
-    setPlanDrafts((prev) => ({
-      ...prev,
-      [planId]: { ...prev[planId], ...patch }
-    }));
+  const moduleLabelByKey = useMemo(() => {
+    return Object.values(moduleRegistry).reduce<Record<string, string>>((acc, item) => {
+      acc[item.key] = item.label;
+      return acc;
+    }, {});
+  }, []);
+
+  const ownerByTenant = useMemo(() => {
+    const map = new Map<string, UserRecord>();
+    owners.forEach((owner) => {
+      if (owner.tenantId) map.set(owner.tenantId, owner);
+    });
+    admins.forEach((admin) => {
+      if (!admin.tenantId) return;
+      if (!map.has(admin.tenantId)) map.set(admin.tenantId, admin);
+    });
+    return map;
+  }, [owners, admins]);
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return '-';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '-';
+    return parsed.toLocaleDateString();
   };
 
-  const savePlan = async (planId: string) => {
+  const suspendTenant = async (tenantId: string) => {
+    setActionTenantId(tenantId);
     try {
-      const draft = planDrafts[planId];
-      await apiRequest<Plan>(`/plans/${planId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          price: Number(draft.price),
-          maxBranches: Number(draft.maxBranches),
-          maxStaff: Number(draft.maxStaff),
-          maxMonthlyAppointments: Number(draft.maxMonthlyAppointments),
-          features: draft.features
-        })
-      });
+      await apiRequest(`/tenants/${tenantId}/suspend`, { method: 'POST' });
+      const row = rowRefs.current[tenantId];
+      if (row) {
+        await new Promise<void>((resolve) => {
+          gsap
+            .timeline({ onComplete: resolve })
+            .to(row, {
+              keyframes: [{ x: -6 }, { x: 6 }, { x: -4 }, { x: 4 }, { x: 0 }],
+              duration: 0.4,
+              ease: 'power1.inOut'
+            })
+            .to(row, {
+              x: -24,
+              opacity: 0,
+              duration: 0.25,
+              ease: 'power1.in'
+            });
+        });
+      }
+      setTenants((prev) => prev.filter((tenant) => tenant.id !== tenantId));
     } catch (err: any) {
-      setError(err.message || 'No se pudo actualizar el plan');
+      setError(err.message || 'No se pudo suspender el tenant');
+    } finally {
+      setActionTenantId(null);
     }
   };
 
   return (
     <section className="space-y-6">
       <header className="app-card">
-        <h2 className="section-title">Negocios (Tenants)</h2>
-        <p className="section-subtitle">Centro de control para la factory SaaS.</p>
+        <h2 className="section-title">Gestion de Tenants</h2>
+        <p className="section-subtitle">Vista global para gobierno y data mining.</p>
       </header>
 
       <AdminNav />
@@ -118,33 +131,9 @@ export function AdminTenantsPage() {
         <p className="rounded-xl border border-red-900 bg-red-950/40 p-3 text-sm text-red-200">{error}</p>
       ) : null}
 
-      {metrics ? (
-        <div className="grid gap-3 md:grid-cols-4">
-          <div className="app-card">
-            <p className="text-xs text-zinc-400">Total Tenants</p>
-            <p className="text-2xl font-semibold">{metrics.total}</p>
-          </div>
-          <div className="app-card">
-            <p className="text-xs text-zinc-400">Trial</p>
-            <p className="text-2xl font-semibold">{metrics.byStatus.trial || 0}</p>
-          </div>
-          <div className="app-card">
-            <p className="text-xs text-zinc-400">Activos</p>
-            <p className="text-2xl font-semibold">{metrics.byStatus.active || 0}</p>
-          </div>
-          <div className="app-card">
-            <p className="text-xs text-zinc-400">Suspendidos</p>
-            <p className="text-2xl font-semibold">{metrics.byStatus.suspended || 0}</p>
-          </div>
-        </div>
-      ) : null}
-
       <div className="app-card">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold">Lista de Barberías</h3>
-          <button className="btn-primary py-1 px-3 text-xs" disabled>
-            + Nuevo Tenant
-          </button>
+          <h3 className="text-sm font-semibold">Tenants en plataforma</h3>
         </div>
 
         {loading ? (
@@ -156,33 +145,58 @@ export function AdminTenantsPage() {
             <table className="w-full text-left text-sm">
               <thead className="border-b border-white/10 text-xs uppercase text-zinc-400">
                 <tr>
-                  <th className="py-3 pr-4 font-medium">Nombre</th>
-                  <th className="py-3 px-4 font-medium">Identificador de URL</th>
-                  <th className="py-3 px-4 font-medium">Plan</th>
-                  <th className="py-3 px-4 font-medium">Estado</th>
-                  <th className="py-3 pl-4 font-medium text-right">Acciones</th>
+                  <th className="py-3 pr-4 font-medium">Negocio / Dueño</th>
+                  <th className="py-3 px-4 font-medium">Correo de contacto</th>
+                  <th className="py-3 px-4 font-medium">Modulos activos</th>
+                  <th className="py-3 px-4 font-medium">Inicio contrato</th>
+                  <th className="py-3 px-4 font-medium">Terminacion</th>
+                  <th className="py-3 pl-4 font-medium text-right">Accion</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {tenants.map((tenant) => {
-                  const status = statusLabels[tenant.status] || statusLabels.active;
+                  const owner = ownerByTenant.get(tenant.id);
+                  const moduleLabels = (tenant.activeModules || [])
+                    .map((key) => moduleLabelByKey[key] || key)
+                    .join(' + ');
+                  const isSuspended = tenant.status === 'suspended';
+                  const isLoading = actionTenantId === tenant.id;
                   return (
-                    <tr key={tenant.id} className="transition-colors hover:bg-white/5">
-                      <td className="py-3 pr-4 font-medium text-white">{tenant.name}</td>
-                      <td className="py-3 px-4 text-zinc-300">{tenant.slug}</td>
-                      <td className="py-3 px-4">
-                        <span className="inline-block rounded-md bg-white/10 px-2 py-0.5 text-xs font-semibold text-zinc-200">
-                          {tenant.planName || tenant.planId}
-                        </span>
+                    <tr
+                      key={tenant.id}
+                      ref={(element) => {
+                        rowRefs.current[tenant.id] = element;
+                      }}
+                      className="transition-colors hover:bg-white/5"
+                    >
+                      <td className="py-3 pr-4">
+                        <p className="font-medium text-white">{tenant.name}</p>
+                        <p className="text-xs text-zinc-400">{owner?.name || 'Sin dueno asignado'}</p>
                       </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-block rounded-md px-2 py-0.5 text-xs font-semibold ${status.className}`}>
-                          {status.label}
-                        </span>
+                      <td className="py-3 px-4 text-zinc-300">
+                        {owner?.email || tenant.email || 'Sin correo'}
                       </td>
+                      <td className="py-3 px-4 text-zinc-300">
+                        {moduleLabels || 'Sin modulos'}
+                      </td>
+                      <td className="py-3 px-4 text-zinc-300">{formatDate(tenant.createdAt)}</td>
+                      <td className="py-3 px-4 text-zinc-300">{formatDate(tenant.validUntil)}</td>
                       <td className="py-3 pl-4 text-right">
-                        <button className="text-xs font-semibold text-zinc-400 hover:text-white" disabled>
-                          Editar
+                        <button
+                          className={`btn-ghost text-xs relative ${isLoading ? 'pointer-events-none' : ''}`}
+                          type="button"
+                          onClick={() => suspendTenant(tenant.id)}
+                          disabled={isSuspended || isLoading}
+                          style={isLoading ? { filter: 'drop-shadow(0 0 10px rgba(0,240,255,0.35))' } : undefined}
+                        >
+                          <span className={isLoading ? 'opacity-0' : 'opacity-100'}>
+                            {isSuspended ? 'Suspendido' : 'Suspender Acceso'}
+                          </span>
+                          {isLoading ? (
+                            <span className="absolute inset-0 flex items-center justify-center">
+                              <EssenceMiniLoader />
+                            </span>
+                          ) : null}
                         </button>
                       </td>
                     </tr>
@@ -191,83 +205,6 @@ export function AdminTenantsPage() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
-
-      <div className="app-card space-y-4">
-        <h3 className="text-sm font-semibold">Gestión de planes</h3>
-        {plans.length === 0 ? (
-          <p className="text-sm text-zinc-400">No hay planes configurados.</p>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {plans.map((plan) => {
-              const draft = planDrafts[plan.id] || plan;
-              return (
-                <div key={plan.id} className="rounded-2xl border border-white/10 bg-black/40 p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold text-white">{plan.name}</p>
-                    <button className="btn-secondary px-3 py-1 text-xs" onClick={() => savePlan(plan.id)}>
-                      Guardar
-                    </button>
-                  </div>
-                  <div className="mt-3 grid gap-3 text-xs text-zinc-300">
-                    <label>
-                      Precio
-                      <input
-                        className="input-field mt-2"
-                        type="number"
-                        value={draft.price}
-                        onChange={(event) => updatePlanDraft(plan.id, { price: Number(event.target.value) })}
-                      />
-                    </label>
-                    <label>
-                      Max Sedes
-                      <input
-                        className="input-field mt-2"
-                        type="number"
-                        value={draft.maxBranches}
-                        onChange={(event) => updatePlanDraft(plan.id, { maxBranches: Number(event.target.value) })}
-                      />
-                    </label>
-                    <label>
-                      Max Staff
-                      <input
-                        className="input-field mt-2"
-                        type="number"
-                        value={draft.maxStaff}
-                        onChange={(event) => updatePlanDraft(plan.id, { maxStaff: Number(event.target.value) })}
-                      />
-                    </label>
-                    <label>
-                      Max Citas / Mes
-                      <input
-                        className="input-field mt-2"
-                        type="number"
-                        value={draft.maxMonthlyAppointments}
-                        onChange={(event) => updatePlanDraft(plan.id, { maxMonthlyAppointments: Number(event.target.value) })}
-                      />
-                    </label>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="app-card">
-        <h3 className="text-sm font-semibold">Consumo WhatsApp por Tenant</h3>
-        {usage.length === 0 ? (
-          <p className="text-sm text-zinc-400">Sin consumo registrado.</p>
-        ) : (
-          <ul className="mt-3 space-y-2 text-sm">
-            {usage.map((item) => (
-              <li key={item.tenantId} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/40 px-3 py-2">
-                <span>{item.tenantName}</span>
-                <span className="font-semibold">{item.totalMessages}</span>
-              </li>
-            ))}
-          </ul>
         )}
       </div>
     </section>
